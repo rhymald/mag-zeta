@@ -6,15 +6,15 @@ const (
 )
 
 type Life struct {
-	Vitality float64
 	Rate int
-	// barrier
+	Barrier map[string]int
 }
 
 
 // NEW
-func InitLife() *Life {
+func MakeLife() *Life {
 	var buffer Life
+	buffer.Barrier = make(map[string]int)
 	buffer.Rate = 618
 	return &buffer
 }

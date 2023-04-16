@@ -18,6 +18,7 @@ func Wait(ms float64) { time.Sleep( time.Millisecond * time.Duration( ms )) }
 
 
 // HP, STATS
+func Vector(args ...float64) float64 { sum := 0.0 ; for _,each := range args { sum += each*each } ; return math.Sqrt(sum) }
 func Round(a float64) int { return int(math.Round(a)) }
 func CeilRound(a float64) int { return int(math.Ceil(a)) } 
 func FloorRound(a float64) int { return int(math.Floor(a)) }
