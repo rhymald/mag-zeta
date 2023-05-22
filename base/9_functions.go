@@ -32,6 +32,10 @@ func ChancedRound(a float64) int {
 
 
 // RANDOMIZER
+// func Stability(max, vector float64) float64 {
+//   return math.Log2( math.Abs(vector) / math.Abs(max) )/math.Log2(math.Sqrt(3))
+//   // can be used to compare heat: vec = threshold, max = current [ x>1 ? overheat : x<-1 ? dumb : normal]
+// }
 func Near(c int) float64 { sum := 0.0 ; for x:=0; x<c; x++ { sum += Rand()+Rand() } ; return sum } 
 func Rand() float64 {
   x := (time.Now().UnixNano())

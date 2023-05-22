@@ -6,10 +6,14 @@ import (
 	// For metrics:
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	// Create span:
-	// "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/attribute"
+	// "go.opentelemetry.io/otel/exporters/prometheus"
+	// "go.opentelemetry.io/otel/metric"
+	// "go.opentelemetry.io/otel/metric/instrument"
+	// sdk "go.opentelemetry.io/otel/sdk/metric"
+	// "context"
 )
 
 var (
@@ -19,13 +23,17 @@ var (
 )
 
 func RunAPI() {
+	// ctx := context.Background()
 	router := gin.Default()
 	router.GET("/", hiThere)
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/spawn", newFoe)
 	router.GET("/around", getAll)
 	router.GET("/login", newPlayer)
-	router.Run(":4917")
+	metrics := gin.Default()
+	metrics.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	go func(){ router.Run(":4917") }()
+	go func(){ metrics.Run(":9093") }()
+	select {}
 }
 
 // TEST
@@ -43,9 +51,9 @@ func newFoe(c *gin.Context) {
 	err := foe.CalculateAttributes()
 	if err == nil {
 		foes = append(foes, foe)
-		c.IndentedJSON(201, "Successfully spawned")
+		c.IndentedJSON(200, "Successfully spawned")
 	} else {
-		c.IndentedJSON(403, "Invalid foe character")
+		c.IndentedJSON(500, "Invalid foe character")
 	}
 }
 
@@ -54,9 +62,9 @@ func newPlayer(c *gin.Context) {
 	err := player.CalculateAttributes()
 	if err == nil {
 		players = append(players, player)
-		c.IndentedJSON(201, "Successfully logged in")
+		c.IndentedJSON(200, "Successfully logged in")
 	} else {
-		c.IndentedJSON(403, "Invalid player character")
+		c.IndentedJSON(500, "Invalid player character")
 	}
 }
 
