@@ -6,25 +6,27 @@ import (
 	// For metrics:
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	// Create span:
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	// "go.opentelemetry.io/otel"
+	// "go.opentelemetry.io/otel/trace"
+	// "go.opentelemetry.io/otel/attribute"
 	// "go.opentelemetry.io/otel/exporters/prometheus"
 	// "go.opentelemetry.io/otel/metric"
 	// "go.opentelemetry.io/otel/metric/instrument"
 	// sdk "go.opentelemetry.io/otel/sdk/metric"
-	// "context"
+	"errors"
 )
 
 var (
 	foes []*play.Character
 	players []*play.Character
-	tracer = otel.Tracer("main")
+	// tracer = otel.Tracer("main")
 )
 
 func RunAPI() {
 	// ctx := context.Background()
 	router := gin.Default()
+	router.Use(otelgin.Middleware("mag"))
 	router.GET("/", hiThere)
 	router.GET("/spawn", newFoe)
 	router.GET("/around", getAll)
@@ -38,9 +40,9 @@ func RunAPI() {
 
 // TEST
 func hiThere(c *gin.Context) { 
-	ctx := (*c).Request.Context()
-	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(attribute.String("ProjectsID","4917"))
+	// ctx := (*c).Request.Context()
+	// span := trace.SpanFromContext(ctx)
+	// span.SetAttributes(attribute.String("ProjectsID","4917"))
 	c.IndentedJSON(200, "Hello world!")
 }
 
@@ -53,7 +55,7 @@ func newFoe(c *gin.Context) {
 		foes = append(foes, foe)
 		c.IndentedJSON(200, "Successfully spawned")
 	} else {
-		c.IndentedJSON(500, "Invalid foe character")
+		c.AbortWithError(500, errors.New("Invalid foe character"))
 	}
 }
 
@@ -64,7 +66,7 @@ func newPlayer(c *gin.Context) {
 		players = append(players, player)
 		c.IndentedJSON(200, "Successfully logged in")
 	} else {
-		c.IndentedJSON(500, "Invalid player character")
+		c.AbortWithError(500, errors.New("Invalid player character"))
 	}
 }
 
