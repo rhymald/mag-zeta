@@ -22,7 +22,7 @@ services:
     ports: 
       - 3000:3000
     environment:
-      - GF_SECURITY_ADMIN_USER=rhymald
+      - GF_SECURITY_ADMIN_USER=rhym
       - GF_SECURITY_ADMIN_PASSWORD=454010
     volumes:
       - ./configuration/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
