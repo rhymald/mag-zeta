@@ -32,8 +32,9 @@ func Test_Functions_Rounds(t *testing.T) {
 func Test_Streams(t *testing.T) {
 	for x:=0; x<9; x++ {
 		str := MakeStream()
-		t.Logf("Stream %d of %s: - Maj:%7.3f | Min:%7.3f | Dev:%7.3f - Len:%7.3f | Mean:%7.3f | Dot:%7.3f", 
-			x+1, str.Elem(), str.Major(), str.Minor(), str.Deviant(), str.Len(), str.Mean(), str.Dot())
+		_,_, maj, min := str.Constitution(1.1479)
+		t.Logf("Stream %d of %s: - Maj:%7.3f | Min:%7.3f | Dev:%7.3f - Len:%7.3f | Mean:%7.3f | Dot:%7.3f \t\t %.1f%% | %.1f%%", 
+			x+1, str.Elem(), str.Major(), str.Minor(), str.Deviant(), str.Len(), str.Mean(), str.Dot(), maj*100, min*100)
 		dots := " - Dots:"
 		for d:=0; d<10; d++ { dd := str.MakeDot() ; Wait(100) ; dots = fmt.Sprintf("%s %+v", dots, *dd) }
 		t.Logf("%s", dots)

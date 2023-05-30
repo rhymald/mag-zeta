@@ -25,7 +25,7 @@ type Character struct {
 }
 
 func LuckyBorn(time int) int { if time%10 == 0 {return 2} else if time%10 == 9 {return 5} else if time%10 < 5 {return 3} else {return 4} ; return 0}
-func (c *Character) IsNPC() bool { return len((*cr).Energy) <= 1 }
+func (c *Character) IsNPC() bool { return len((*c).Energy) <= 1 }
 
 func (c *Character) CalculateAttributes() error {
 	if (*c).ID < 1000000 { return errors.New("Character Attributes: Empty character ID.") }
