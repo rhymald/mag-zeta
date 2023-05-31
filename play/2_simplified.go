@@ -18,6 +18,7 @@ type Simplified struct {
 
 func (c *Character) Simplify() Simplified {
 	var buffer Simplified
+	c.Lock()
 	npc := c.IsNPC()
 	buffer.HP = (*c).Life.Rate
 	if npc { 
@@ -27,6 +28,8 @@ func (c *Character) Simplify() Simplified {
 		buffer.ID = "Player"
 		buffer.Power = len((*c).Pool)
 	}
+	c.Unlock()
+	// immitation:
 	barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
 	buffer.Wound = penalty
 	buffer.Barrier = barrier

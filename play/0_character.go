@@ -3,6 +3,7 @@ package play
 import (
 	"rhymald/mag-zeta/base"
 	"errors"
+	"sync"
 )
 
 type Attributes struct { 
@@ -13,7 +14,8 @@ type Attributes struct {
 }
 
 type Character struct {
-	ID int
+	ID map[string]int
+	sync.Mutex
 	// basics
 	Body *base.Stream
 	Energy []*base.Stream
@@ -28,17 +30,19 @@ func LuckyBorn(time int) int { if time%10 == 0 {return 2} else if time%10 == 9 {
 func (c *Character) IsNPC() bool { return len((*c).Energy) <= 1 }
 
 func (c *Character) CalculateAttributes() error {
-	if (*c).ID < 1000000 { return errors.New("Character Attributes: Empty character ID.") }
+	c.Lock()
+	if (*c).ID["Born"] < 1000000 { return errors.New("Character Attributes: Empty character ID.") }
 	if len((*c).Energy) == 0 { return errors.New("Character Attributes: Empty character streams.") }
 	var buffer Attributes
 	buffer.Vitality = (*c).Body.Dot() * 10
 	buffer.Agility = (*c).Body.Mean() * 0.7
 	buffer.Resistance = make(map[string]float64)
-	mod := float64(6 - LuckyBorn((*c).ID))
+	mod := float64(6 - LuckyBorn((*c).ID["Born"]))
 	for _, each := range (*c).Energy { 
 		buffer.Resistance[each.Elem()] += each.Mean()
 		buffer.Capacity += each.Len() * mod
 	}
 	(*c).Atts = &buffer
+	c.Unlock()
 	return nil
 }
