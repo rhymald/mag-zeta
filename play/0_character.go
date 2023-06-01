@@ -21,7 +21,7 @@ type Character struct {
 	Energy []*base.Stream
 	// consumables
 	Life *base.Life
-	Pool []*base.Dot
+	Pool map[int]*base.Dot
 	// recalculateable stats
 	Atts *Attributes
 }
@@ -43,6 +43,7 @@ func (c *Character) CalculateAttributes() error {
 		buffer.Capacity += each.Len() * mod
 	}
 	(*c).Atts = &buffer
+	(*c).ID["Atts"] = base.Epoch()
 	c.Unlock()
 	return nil
 }

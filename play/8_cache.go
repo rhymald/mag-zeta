@@ -45,13 +45,13 @@ func (st *State) UpdLife() { // used after write
 	st.Lock()
 	(*st).Writing.Time["life"] = base.EpochNS() - (*st).Later.Time["life"]
 	(*st).Writing.Life.Rate = (*(*(*st).Current).Life).Rate - (*st).Writing.Life.Rate
-	barriers := make(map[string]int) 
+	barriers := make(map[string]int)
 	for _, element := range base.ElemList {
 		change := (*(*(*st).Current).Life).Barrier[element] - (*st).Writing.Life.Barrier[element]
 		if change != 0 { barriers[element] = change }
 	}
 	(*st).Writing.Life.Barrier = barriers
-	(*st).Later.Time["life"] = base.EpochNS() 
+	(*st).Later.Time["life"] = base.EpochNS()
 	(*st).Later.Life = *((*(*st).Current).Life)
 	st.Unlock()
 	(*st).Current.Unlock()
