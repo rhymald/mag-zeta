@@ -43,8 +43,10 @@ func (c *Character) NewState() *State {
 func (st *State) UpdLife() { // used after write
 	(*st).Current.Lock()
 	st.Lock()
-	(*st).Writing.Time["life"] = base.EpochNS() - (*st).Later.Time["life"]
-	(*st).Writing.Life.Rate = (*(*(*st).Current).Life).Rate - (*st).Writing.Life.Rate
+	timeGape := base.EpochNS() - (*st).Later.Time["life"]
+	(*st).Writing.Time["life"] = timeGape
+	lifeGape := (*st.Current.Life).Rate - (*st).Later.Life.Rate
+	(*st).Writing.Life.Rate = lifeGape
 	barriers := make(map[string]int)
 	for _, element := range base.ElemList {
 		change := (*(*(*st).Current).Life).Barrier[element] - (*st).Writing.Life.Barrier[element]
