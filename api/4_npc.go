@@ -23,11 +23,15 @@ func newFoe(c *gin.Context) {
 	spanCalculate.End()
 
 	_, spanResponse := tracer.Start(ctx, "responding")
-	defer spanResponse.End()
+	world.Lock()
 	if err == nil {
-		foes = append(foes, foe)
+		(*world).NPCs = append((*world).NPCs, foe)
 		c.IndentedJSON(200, "Successfully spawned")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid foe character"))
 	}
+	spanResponse.End()
+
+	go func(){ playerLiveAlive((*world).NPCs[len((*world).NPCs)-1], (*c).Request.Context()) }()
+	world.Unlock()
 }

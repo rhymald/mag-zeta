@@ -5,11 +5,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"sync"
 )
 
+type Location struct {
+	NPCs []*play.Character
+	Players []*play.Character
+	sync.Mutex
+}
+
 var (
-	foes []*play.Character
-	players []*play.Character
+	world = &Location{}
 	tracer = otel.Tracer("api")
 )
 
@@ -19,13 +25,17 @@ func getAll(c *gin.Context) {
 
 	var buffer []play.Simplified
 	_, spanPlayers := tracer.Start(ctx, "players")
-	for _, each := range players { buffer = append(buffer, each.Simplify()) }
+	world.Lock()
+	for _, each := range (*world).Players { buffer = append(buffer, each.Simplify()) }
+	world.Unlock()
 	countOfPlayers := len(buffer)
 	span.SetAttributes(attribute.Int("Players", countOfPlayers))
 	spanPlayers.End()
 
 	_, spanNPC := tracer.Start(ctx, "npc")
-	for _, each := range foes { buffer = append(buffer, each.Simplify()) }
+	world.Lock()
+	for _, each := range (*world).NPCs { buffer = append(buffer, each.Simplify()) }
+	world.Unlock()
 	span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
 	spanNPC.End()
 

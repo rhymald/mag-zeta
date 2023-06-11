@@ -15,15 +15,19 @@ func MakePlayer() *Character {
 	return &buffer
 }
 
-func (c *Character) GetDotFrom(strIndex int) {
-	base.Wait(64)
+func (c *Character) GetDotFrom(strIndex int) (int, *base.Dot) {
+	base.Wait(16)
 	c.Lock()
 	buffer := (*c).Pool
 	stream := (*c).Energy[strIndex]
-	buffer[base.Epoch()] = stream.MakeDot()
+	index := base.Epoch()
+	for { _, ok := buffer[index] ; if ok { index++} else { break } }
+	buffer[index] = stream.MakeDot()
 	(*c).Pool = buffer
+	(*c).ID["Pool"] = base.Epoch()
 	c.Unlock()
-	base.Wait(64)
+	base.Wait(16)
+	return index, buffer[index]
 }
 
 func (c *Character) BurnDot() (int, *base.Dot) {
