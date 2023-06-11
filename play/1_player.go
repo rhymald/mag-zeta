@@ -16,7 +16,7 @@ func MakePlayer() *Character {
 }
 
 func (c *Character) GetDotFrom(strIndex int) (int, *base.Dot) {
-	base.Wait(16)
+	base.Wait(2)
 	c.Lock()
 	buffer := (*c).Pool
 	stream := (*c).Energy[strIndex]
@@ -26,18 +26,25 @@ func (c *Character) GetDotFrom(strIndex int) (int, *base.Dot) {
 	(*c).Pool = buffer
 	(*c).ID["Pool"] = base.Epoch()
 	c.Unlock()
-	base.Wait(16)
+	base.Wait(3)
 	return index, buffer[index]
 }
 
 func (c *Character) BurnDot() (int, *base.Dot) {
+	if c.IsNPC() { str := (*c).Energy[0] ; base.Wait(5) ; return base.Epoch(), str.MakeDot() }
 	dot, tstamp := &base.Dot{}, -1
 	c.Lock()
 	buffer := (*c).Pool
-	for ts, _ := range buffer {
-		tstamp, dot = ts, (*c).Pool[ts]
-		delete(buffer, ts)
-		break
+	min := base.Epoch()
+	for ts := range buffer {
+		// tstamp, dot = ts, (*c).Pool[ts]
+		// delete(buffer, ts)
+		// break
+		if ts < min { min = ts }
+	}
+	if len(buffer) != 0 {
+		tstamp, dot = min, (*c).Pool[min]
+		delete(buffer, min)
 	}
 	(*c).Pool = buffer
 	c.Unlock()
