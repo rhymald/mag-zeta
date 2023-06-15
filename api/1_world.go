@@ -9,13 +9,12 @@ import (
 )
 
 type Location struct {
-	NPCs []*play.Character
-	Players []*play.Character
+	ByID map[int]*play.Character
 	sync.Mutex
 }
 
 var (
-	world = &Location{}
+	world = &Location{ ByID: make(map[int]*play.Character) }
 	tracer = otel.Tracer("api")
 )
 
@@ -25,19 +24,20 @@ func getAll(c *gin.Context) {
 
 	var buffer []play.Simplified
 	_, spanPlayers := tracer.Start(ctx, "players")
+	countOfPlayers := 0
 	world.Lock()
-	for _, each := range (*world).Players { buffer = append(buffer, each.Simplify()) }
+	for _, each := range (*world).ByID { buffer = append(buffer, each.Simplify()) ; if each.IsNPC() == false { countOfPlayers++ }}
 	world.Unlock()
-	countOfPlayers := len(buffer)
 	span.SetAttributes(attribute.Int("Players", countOfPlayers))
+	span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
 	spanPlayers.End()
 
-	_, spanNPC := tracer.Start(ctx, "npc")
-	world.Lock()
-	for _, each := range (*world).NPCs { buffer = append(buffer, each.Simplify()) }
-	world.Unlock()
-	span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
-	spanNPC.End()
+	// _, spanNPC := tracer.Start(ctx, "npc")
+	// world.Lock()
+	// for _, each := range (*world).NPCs { buffer = append(buffer, each.Simplify()) }
+	// world.Unlock()
+	// span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
+	// spanNPC.End()
 
 	_, spanResponse := tracer.Start(ctx, "responding")
 	defer spanResponse.End()

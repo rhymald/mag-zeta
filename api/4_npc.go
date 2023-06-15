@@ -25,13 +25,14 @@ func newFoe(c *gin.Context) {
 	_, spanResponse := tracer.Start(ctx, "responding")
 	world.Lock()
 	if err == nil {
-		(*world).NPCs = append((*world).NPCs, foe)
+		(*world).ByID[foe.GetID()] = foe
 		c.IndentedJSON(200, "Successfully spawned")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid foe character"))
 	}
+	world.Unlock()
 	spanResponse.End()
 
-	go func(){ playerLiveAlive((*world).NPCs[len((*world).NPCs)-1], (*c).Request.Context()) }()
-	world.Unlock()
+	go func(){ playerLiveAlive(foe, (*c).Request.Context()) }()
+	// select {}
 }

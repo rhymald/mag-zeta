@@ -48,11 +48,11 @@ func Test_Dots(t *testing.T) {
 	_,_ = npc.CalculateAttributes(), player.CalculateAttributes()
 	t.Logf("--------------------------------------------------")
 	t.Logf("Player: %+v", (*player).Pool)
-	for x:=0 ; x<12 ; x++ { 
+	for x:=0 ; x<10000 ; x++ { 
 		player.GetDotFrom( x % len( (*player).Energy ) ) 
-		t.Logf("    +Gain: %+v", (*player).Pool)
-		if x%3 != 0 { ts, dot := player.BurnDot()  ; t.Logf("    -Burn: %d:%+v %+v", ts, dot, (*player).Pool) }
+		if x%3 != 0 { player.BurnDot()  }//; t.Logf("    -Burn: %d:%+v %+v", ts, dot, (*player).Pool) }
 	}
+	t.Logf("    +Gain: %+v", len((*player).Pool))
 	t.Logf("--------------------------------------------------")
 	t.Logf("NPC: %+v", (*npc).Pool)
 	for x:=0 ; x<5 ; x++ {
