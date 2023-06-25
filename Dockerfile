@@ -10,6 +10,6 @@ RUN ls -la
 RUN go build -o mag
 RUN ls -la /app/
 
-FROM gcr.io/distroless/base-debian11 
+FROM ubuntu:latest 
 COPY --from=builder /app/mag /mag
 ENTRYPOINT ["./mag"]

@@ -5,6 +5,8 @@ import (
 	"rhymald/mag-zeta/play"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
+	"rhymald/mag-zeta/base"
+	"context"
 )
 
 func newFoe(c *gin.Context) { 
@@ -33,6 +35,15 @@ func newFoe(c *gin.Context) {
 	world.Unlock()
 	spanResponse.End()
 
-	go func(){ playerLiveAlive(foe, (*c).Request.Context()) }()
+	go func(){ charLiveAlive(foe, (*c).Request.Context()) }()
 	// select {}
+}
+
+func npcRegen(hps *base.Life, ids *map[string]int, ctx context.Context) {
+	_, span := tracer.Start(ctx, "npc-regeneration")
+	defer span.End()
+	hp := -30
+	hps.HealDamage(hp)
+	(*ids)["Life"] = base.Epoch()
+	span.SetAttributes(attribute.Int("HPGain", hp))
 }

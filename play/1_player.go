@@ -15,17 +15,12 @@ func MakePlayer() *Character {
 	return &buffer
 }
 
-func (c *Character) GetDotFrom(strIndex int) (int, *base.Dot) {
-	c.Lock()
-	buffer := (*c).Pool
-	stream := (*c).Energy[strIndex]
+func GetDotFrom(pool *map[int]*base.Dot, stream *base.Stream, ids *map[string]int) (int, *base.Dot) {
 	index := base.EpochNS()
-	for { _, ok := buffer[index] ; if ok { index++} else { break } }
-	buffer[index] = stream.MakeDot()
-	(*c).Pool = buffer
-	(*c).ID["Pool"] = base.EpochNS()
-	c.Unlock()
-	return index, buffer[index]
+	for { _, ok := (*pool)[index] ; if ok { index++} else { break } }
+	(*pool)[index] = stream.MakeDot()
+	(*ids)["Pool"] = base.EpochNS()
+	return index, (*pool)[index]
 }
 
 func (c *Character) BurnDot() (int, *base.Dot) {
@@ -34,12 +29,7 @@ func (c *Character) BurnDot() (int, *base.Dot) {
 	c.Lock()
 	buffer := (*c).Pool
 	min := base.Epoch()
-	for ts := range buffer {
-		// tstamp, dot = ts, (*c).Pool[ts]
-		// delete(buffer, ts)
-		// break
-		if ts < min { min = ts }
-	}
+	for ts := range buffer { if ts < min { min = ts } }
 	if len(buffer) != 0 {
 		tstamp, dot = min, (*c).Pool[min]
 		delete(buffer, min)

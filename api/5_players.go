@@ -35,50 +35,22 @@ func newPlayer(c *gin.Context) {
 	world.Unlock()
 	spanResponse.End()
 	
-	go func(){ playerLiveAlive(player, (*c).Request.Context()) }()
+	go func(){ charLiveAlive(player, (*c).Request.Context()) }()
 	// select {}
 }
 
-func playerRegen(c *play.Character, ctx context.Context) {
-	// if c.IsNPC() == false {
-		// _, span := tracer.Start(ctx, "generate-dot")
-		// defer span.End()
-		picker := base.EpochNS() % len((*c).Energy)
-		// span.SetAttributes(attribute.Int("ByStream", picker))
-		_, dot := c.GetDotFrom(picker)
-		// span.SetAttributes(attribute.Int("DotIdx", idx))
-		// span.AddEvent(dot.ToStr())
-		base.Wait(256*dot.Weight())
-		hp := 3
-		c.Life.HealDamage(hp)
-		(*c).ID["Life"] = base.Epoch()
-		// span.SetAttributes(attribute.Int("HPGain", hp))
-	// } else {
-	// 	// _, span := tracer.Start(ctx, "npc-regeneration")
-	// 	// defer span.End()
-	// 	base.Wait(256)
-	// 	hp := 1
-	// 	c.Life.HealDamage(hp)
-	// 	(*c).ID["Life"] = base.Epoch()
-	// 	// span.SetAttributes(attribute.Int("HPGain", hp))
-	// }
+func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, ctx context.Context) float64 {
+	_, span := tracer.Start(ctx, "player-regeneration")
+	defer span.End()
+	picker := base.EpochNS() % len(*energy)
+	stream := (*energy)[picker]
+	span.SetAttributes(attribute.Int("ByStream", picker))
+	idx, dot := play.GetDotFrom(pool, stream, ids)
+	span.SetAttributes(attribute.Int("DotIdx", idx))
+	span.AddEvent(dot.ToStr())
+	hp := 3
+	hps.HealDamage(hp)
+	(*ids)["Life"] = base.Epoch()
+	span.SetAttributes(attribute.Int("HPGain", hp))
+	return 1000*dot.Weight()
 }
-
-func playerLiveAlive(c *play.Character, ctx context.Context) {
-	// ctx2, span := tracer.Start(ctx, "lifecycle-regeneration")
-	// defer span.End()
-	for {
-		c.Lock()
-		if c.Life.Dead() { return } //span.AddEvent("Character died")
-		energyFull := len((*c).Pool) < base.ChancedRound((*(*c).Atts).Capacity)
-		c.Unlock()
-		if energyFull { base.Wait(4096) ; continue } //span.AddEvent("Energy full, wait") ;
-		c.Lock()
-		playerRegen(&*c, ctx) //2)
-		c.Unlock()
-	}
-}
-// + regen
-// + potion(s)
-// + move
-// + jinx[e], punch[p] 
