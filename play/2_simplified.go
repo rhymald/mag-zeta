@@ -4,6 +4,7 @@ import "rhymald/mag-zeta/base"
 
 type Simplified struct {
 	ID string `json:"ID"`
+	TS map[string]int `json:"TS"` 
 	// health
 	HP int `json:"HP"`
 	Barrier int `json:"Barrier"`
@@ -28,6 +29,7 @@ func (c *Character) Simplify() Simplified {
 		buffer.ID = "Player"
 		buffer.Power = len((*c).Pool)
 	}
+	buffer.TS = (*c).ID
 	c.Unlock()
 	// immitation:
 	barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())

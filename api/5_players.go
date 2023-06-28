@@ -6,7 +6,9 @@ import (
 	"rhymald/mag-zeta/base"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
-	"context"
+	// "context"
+	"go.opentelemetry.io/otel/trace"
+	"fmt"
 )
 
 func newPlayer(c *gin.Context) { 
@@ -39,18 +41,19 @@ func newPlayer(c *gin.Context) {
 	// select {}
 }
 
-func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, ctx context.Context) float64 {
-	_, span := tracer.Start(ctx, "player-regeneration")
-	defer span.End()
+func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, span trace.Span) float64 {
+	// _, span := tracer.Start(ctx, "player-regeneration")
+	// defer span.End()
 	picker := base.EpochNS() % len(*energy)
 	stream := (*energy)[picker]
-	span.SetAttributes(attribute.Int("ByStream", picker))
+	// span.SetAttributes(attribute.Int("ByStream", picker))
 	idx, dot := play.GetDotFrom(pool, stream, ids)
-	span.SetAttributes(attribute.Int("DotIdx", idx))
+	span.AddEvent(fmt.Sprintf("%d|%d", picker, idx))
+	// span.SetAttributes(attribute.Int("DotIdx", idx))
 	span.AddEvent(dot.ToStr())
 	hp := 3
 	hps.HealDamage(hp)
 	(*ids)["Life"] = base.Epoch()
-	span.SetAttributes(attribute.Int("HPGain", hp))
+	span.AddEvent(fmt.Sprintf("HP|%+d", hp))
 	return 1000*dot.Weight()
 }

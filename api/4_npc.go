@@ -6,7 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
 	"rhymald/mag-zeta/base"
-	"context"
+	// "context"
+	"go.opentelemetry.io/otel/trace"
+	"fmt"
 )
 
 func newFoe(c *gin.Context) { 
@@ -39,11 +41,11 @@ func newFoe(c *gin.Context) {
 	// select {}
 }
 
-func npcRegen(hps *base.Life, ids *map[string]int, ctx context.Context) {
-	_, span := tracer.Start(ctx, "npc-regeneration")
-	defer span.End()
-	hp := -30
+func npcRegen(hps *base.Life, ids *map[string]int, span trace.Span) {
+	// _, span := tracer.Start(ctx, "npc-regeneration")
+	// defer span.End()
+	hp := -100
 	hps.HealDamage(hp)
 	(*ids)["Life"] = base.Epoch()
-	span.SetAttributes(attribute.Int("HPGain", hp))
+	span.AddEvent(fmt.Sprintf("HP|%+d", hp))
 }

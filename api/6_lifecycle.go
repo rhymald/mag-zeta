@@ -8,14 +8,13 @@ import (
 )
 
 func charLiveAlive(c *play.Character, ctx context.Context) {
-	ctx2, span := tracer.Start(ctx, "lifecycle")
-	// defer parentspan.End()
+	_, span := tracer.Start(ctx, "lifecycle")
 	defer span.End()
 	if c.IsNPC() {
 		for {
 			c.Lock()
-			if c.Life.Wounded() { span.AddEvent("Character died") ; break }
-			npcRegen((*c).Life, &(*c).ID, ctx2)
+			if c.Life.Wounded() { span.AddEvent("Character died") ; span.End() ; return }
+			npcRegen((*c).Life, &(*c).ID, span)
 			c.Unlock()
 			base.Wait(1000)
 		}
@@ -23,13 +22,14 @@ func charLiveAlive(c *play.Character, ctx context.Context) {
 		for {
 			wait := 4096.0
 			c.Lock()
-			if c.Life.Dead() { span.AddEvent("Character died") ; break }
+			if c.Life.Dead() { span.AddEvent("Character died") ; return }
 			energyFull := len((*c).Pool) >= base.ChancedRound((*(*c).Atts).Capacity)
 			if energyFull { 
 				c.Unlock()
 				span.AddEvent("Energy full, wait")
+				span.End()
 			} else {
-				wait = playerRegen((*c).Life, &(*c).Pool, &(*c).ID, &(*c).Energy, ctx2)
+				wait = playerRegen((*c).Life, &(*c).Pool, &(*c).ID, &(*c).Energy, span)
 				c.Unlock()
 			}
 			base.Wait(wait)
