@@ -1,8 +1,8 @@
 package base
 
 const ( 
-	MaxHP int = 1000
-	Death int = -618
+	MaxHP int = 1024
+	Death int = -512
 )
 
 type Life struct {
@@ -26,10 +26,10 @@ func (life *Life) Dead() bool { return (*life).Rate < Death }
 
 // MOD
 func (life *Life) HealDamage(amount int) {
+	if life.Dead() { (*life).Rate = Death ; return }
+	if life.Full() { (*life).Rate = MaxHP ; return }
 	if life.Wounded() {
 		if amount > 0 { (*life).Rate += 1 } else if amount < 0 { (*life).Rate += -1 }
 	} else { (*life).Rate += amount }
-	if life.Dead() { (*life).Rate = Death ; return }
-	if life.Full() { (*life).Rate = MaxHP ; return }
 }
 

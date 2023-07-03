@@ -13,10 +13,10 @@ func charLiveAlive(c *play.Character, ctx context.Context) {
 	if c.IsNPC() {
 		for {
 			c.Lock()
-			if c.Life.Wounded() { span.AddEvent("Character died") ; span.End() ; return }
-			npcRegen((*c).Life, &(*c).ID, span)
+			if c.Life.Wounded() { c.Unlock() ; span.AddEvent("Character died") ; return }
+			npcRegen((*c).Life, &(*c).ID, &span)
 			c.Unlock()
-			base.Wait(1000)
+			base.Wait(4096)
 		}
 	} else {
 		for {
@@ -29,7 +29,7 @@ func charLiveAlive(c *play.Character, ctx context.Context) {
 				span.AddEvent("Energy full, wait")
 				span.End()
 			} else {
-				wait = playerRegen((*c).Life, &(*c).Pool, &(*c).ID, &(*c).Energy, span)
+				wait = playerRegen((*c).Life, &(*c).Pool, &(*c).ID, &(*c).Energy, &span)
 				c.Unlock()
 			}
 			base.Wait(wait)

@@ -41,11 +41,9 @@ func newFoe(c *gin.Context) {
 	// select {}
 }
 
-func npcRegen(hps *base.Life, ids *map[string]int, span trace.Span) {
-	// _, span := tracer.Start(ctx, "npc-regeneration")
-	// defer span.End()
-	hp := -100
+func npcRegen(hps *base.Life, ids *map[string]int, span *trace.Span) {
+	hp := 32
 	hps.HealDamage(hp)
 	(*ids)["Life"] = base.Epoch()
-	span.AddEvent(fmt.Sprintf("HP|%+d", hp))
+	(*span).AddEvent(fmt.Sprintf("0|+0[none|-1]+HP|%+d", hp))
 }

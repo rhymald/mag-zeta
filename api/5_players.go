@@ -41,19 +41,13 @@ func newPlayer(c *gin.Context) {
 	// select {}
 }
 
-func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, span trace.Span) float64 {
-	// _, span := tracer.Start(ctx, "player-regeneration")
-	// defer span.End()
+func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, span *trace.Span) float64 {
 	picker := base.EpochNS() % len(*energy)
 	stream := (*energy)[picker]
-	// span.SetAttributes(attribute.Int("ByStream", picker))
 	idx, dot := play.GetDotFrom(pool, stream, ids)
-	span.AddEvent(fmt.Sprintf("%d|%d", picker, idx))
-	// span.SetAttributes(attribute.Int("DotIdx", idx))
-	span.AddEvent(dot.ToStr())
-	hp := 3
+	hp := 8
 	hps.HealDamage(hp)
 	(*ids)["Life"] = base.Epoch()
-	span.AddEvent(fmt.Sprintf("HP|%+d", hp))
+	(*span).AddEvent(fmt.Sprintf("%d|+%d[%s]|+HP[%d]", picker, idx, dot.ToStr(), hp))
 	return 1000*dot.Weight()
 }
