@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
 	"rhymald/mag-zeta/base"
-	// "context"
 	"go.opentelemetry.io/otel/trace"
 	"fmt"
 )
@@ -29,7 +28,7 @@ func newFoe(c *gin.Context) {
 	_, spanResponse := tracer.Start(ctx, "responding")
 	world.Lock()
 	if err == nil {
-		(*world).ByID[foe.GetID()] = foe
+		(*world).ByID[foe.GetID()] = foe.NewState()
 		c.IndentedJSON(200, "Successfully spawned")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid foe character"))

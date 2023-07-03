@@ -9,12 +9,12 @@ import (
 )
 
 type Location struct {
-	ByID map[int]*play.Character
+	ByID map[int]*play.State
 	sync.Mutex
 }
 
 var (
-	world = &Location{ ByID: make(map[int]*play.Character) }
+	world = &Location{ ByID: make(map[int]*play.State) }
 	tracer = otel.Tracer("api")
 )
 
@@ -26,18 +26,11 @@ func getAll(c *gin.Context) {
 	_, spanPlayers := tracer.Start(ctx, "players")
 	countOfPlayers := 0
 	world.Lock()
-	for _, each := range (*world).ByID { buffer = append(buffer, each.Simplify()) ; if each.IsNPC() == false { countOfPlayers++ }}
+	for _, each := range (*world).ByID { buffer = append(buffer, (*each).Current.Simplify()) ; if (*each).Current.IsNPC() == false { countOfPlayers++ }}
 	world.Unlock()
 	span.SetAttributes(attribute.Int("Players", countOfPlayers))
 	span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
 	spanPlayers.End()
-
-	// _, spanNPC := tracer.Start(ctx, "npc")
-	// world.Lock()
-	// for _, each := range (*world).NPCs { buffer = append(buffer, each.Simplify()) }
-	// world.Unlock()
-	// span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
-	// spanNPC.End()
 
 	_, spanResponse := tracer.Start(ctx, "responding")
 	defer spanResponse.End()

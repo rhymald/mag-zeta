@@ -6,7 +6,6 @@ import (
 	"rhymald/mag-zeta/base"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
-	// "context"
 	"go.opentelemetry.io/otel/trace"
 	"fmt"
 )
@@ -29,7 +28,7 @@ func newPlayer(c *gin.Context) {
 	_, spanResponse := tracer.Start(ctx, "responding")
 	world.Lock()
 	if err == nil {
-		(*world).ByID[player.GetID()] = player
+		(*world).ByID[player.GetID()] = player.NewState()
 		c.IndentedJSON(200, "Successfully logged in")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid player character"))
