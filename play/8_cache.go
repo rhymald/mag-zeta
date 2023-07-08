@@ -7,7 +7,7 @@ import (
 
 type State struct {
 	Current *Character
-	// Effects map[int]*Effect
+	Effects map[int]*base.Effect
 	Later struct {
 		Time map[string]int
 		// Body *base.Stream
@@ -29,6 +29,7 @@ func (c *Character) NewState() *State {
 	var buffer State
 	c.Lock()
 	buffer.Current = c
+	buffer.Effects = make(map[int]*base.Effect)
 	buffer.Later.Time = make(map[string]int)
 	buffer.Later.Time["life"] = base.EpochNS()
 	buffer.Later.Life = *((*c).Life)

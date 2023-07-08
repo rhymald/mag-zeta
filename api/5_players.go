@@ -37,7 +37,6 @@ func newPlayer(c *gin.Context) {
 	spanResponse.End()
 	
 	go func(){ charLiveAlive(player, (*c).Request.Context()) }()
-	// select {}
 }
 
 func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, span *trace.Span) float64 {
