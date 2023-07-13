@@ -3,11 +3,11 @@ package api
 import (
 	"errors"
 	"rhymald/mag-zeta/play"
-	"rhymald/mag-zeta/base"
+	// "rhymald/mag-zeta/base"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-	"fmt"
+	// "go.opentelemetry.io/otel/trace"
+	// "fmt"
 )
 
 func newPlayer(c *gin.Context) { 
@@ -27,8 +27,9 @@ func newPlayer(c *gin.Context) {
 	
 	_, spanResponse := tracer.Start(ctx, "responding")
 	world.Lock()
+	state := player.NewState()
 	if err == nil {
-		(*world).ByID[player.GetID()] = player.NewState()
+		(*world).ByID[player.GetID()] = state
 		c.IndentedJSON(200, "Successfully logged in")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid player character"))
@@ -36,16 +37,5 @@ func newPlayer(c *gin.Context) {
 	world.Unlock()
 	spanResponse.End()
 	
-	go func(){ charLiveAlive(player, (*c).Request.Context()) }()
-}
-
-func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, span *trace.Span) float64 {
-	picker := base.EpochNS() % len(*energy)
-	stream := (*energy)[picker]
-	idx, dot := play.GetDotFrom(pool, stream, ids)
-	hp := 8
-	hps.HealDamage(hp)
-	(*ids)["Life"] = base.Epoch()
-	(*span).AddEvent(fmt.Sprintf("%d|+%d[%s]|+HP[%d]", picker, idx, dot.ToStr(), hp))
-	return 1000*dot.Weight()
+	go func(){ Regenerate(state, (*c).Request.Context()) }()
 }

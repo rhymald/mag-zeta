@@ -5,9 +5,9 @@ import (
 	"rhymald/mag-zeta/play"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
-	"rhymald/mag-zeta/base"
-	"go.opentelemetry.io/otel/trace"
-	"fmt"
+	// "rhymald/mag-zeta/base"
+	// "go.opentelemetry.io/otel/trace"
+	// "fmt"
 )
 
 func newFoe(c *gin.Context) { 
@@ -27,8 +27,9 @@ func newFoe(c *gin.Context) {
 
 	_, spanResponse := tracer.Start(ctx, "responding")
 	world.Lock()
+	state := foe.NewState()
 	if err == nil {
-		(*world).ByID[foe.GetID()] = foe.NewState()
+		(*world).ByID[foe.GetID()] = state
 		c.IndentedJSON(200, "Successfully spawned")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid foe character"))
@@ -36,13 +37,13 @@ func newFoe(c *gin.Context) {
 	world.Unlock()
 	spanResponse.End()
 
-	go func(){ charLiveAlive(foe, (*c).Request.Context()) }()
+	go func(){ Regenerate(state, (*c).Request.Context()) }()
 	// select {}
 }
 
-func npcRegen(hps *base.Life, ids *map[string]int, span *trace.Span) {
-	hp := 32
-	hps.HealDamage(hp)
-	(*ids)["Life"] = base.Epoch()
-	(*span).AddEvent(fmt.Sprintf("0|+0[none|-1]+HP|%+d", hp))
-}
+// func npcRegen(hps *base.Life, ids *map[string]int, span *trace.Span) {
+// 	hp := 32
+// 	hps.HealDamage(hp)
+// 	(*ids)["Life"] = base.Epoch()
+// 	(*span).AddEvent(fmt.Sprintf("0|+0[none|-1]+HP|%+d", hp))
+// }

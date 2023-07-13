@@ -1,10 +1,14 @@
 package base
 
-type Effect_Dot map[string]int
-var DotTags = []string{ "HP", "DE", "DW", "DT" }
+var DotTags = []string{ 
+	"DE", // Element
+	"DW", // Weight
+	"DD", // Dot Delay
+}
 
-type Effect_DMG map[string]int
-var DMGTags = []string{ "HP", "DMG" }
+var RegenTags = []string{ 
+	"HPR",  // HP promille portion
+}
 
 type Effect struct {
 	Time int
@@ -17,11 +21,16 @@ func NewEffect() *Effect {
 	return &buffer
 }
 
-func (ef *Effect) MakeDot(dot *Dot) {
+func (ef *Effect) Add_Self_MakeDot(dot *Dot) {
 	buffer := make(map[string]int)
-	buffer["DT"] = CeilRound(1000/dot.Weight()+1)
+	buffer["DD"] = CeilRound(1618/dot.Weight()+1)
 	buffer["DE"] = ElemIndex[dot.Elem()]
 	buffer["DW"] = (*dot)[dot.Elem()]
-	buffer["HP"] = 8
+	(*ef).Effects = append((*ef).Effects, buffer)
+}
+
+func (ef *Effect) Add_Self_HPRegen(hp int) {
+	buffer := make(map[string]int)
+	buffer["HPR"] = hp
 	(*ef).Effects = append((*ef).Effects, buffer)
 }
