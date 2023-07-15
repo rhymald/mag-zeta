@@ -5,6 +5,7 @@ import (
 	"rhymald/mag-zeta/base"
 	"context"
 	// "go.opentelemetry.io/otel/trace"
+	"math"
 	"fmt"
 )
 
@@ -52,11 +53,13 @@ import (
 // 	return 1000*dot.Weight()
 // }
 
-func Regenerate(st *play.State, ctx context.Context) {
+func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 	isNPC := (*st).Current.IsNPC()
 	if !isNPC { for {
-		// if len((*(*st).Current).Pool) < base.ChancedRound((*(*st).Current))
-		_, span := tracer.Start(ctx, "player-regen")
+		(*st).Current.Lock()
+		if len((*(*st).Current).Pool) >= base.ChancedRound((*(*(*st).Current).Atts).Capacity) { (*st).Current. Unlock() ; base.Wait(4236) ; break }
+		(*st).Current.Unlock()
+		_, span := tracer.Start(ctx, fmt.Sprintf("player-%s-regen", (*st).Current.GetID()))
 		defer span.End()
 		effect := base.NewEffect()
 		(*st).Current.Lock()
@@ -69,19 +72,57 @@ func Regenerate(st *play.State, ctx context.Context) {
 		effect.Add_Self_HPRegen(8)
 		st.Lock()
 		(*st).Effects[(*effect).Time] = effect
-		fmt.Println((*st).Effects)
+		span.AddEvent(fmt.Sprintf("%d|+%d[%s]|+HP[%d]", picker, (*effect).Time, dot.ToStr(), 8))
+		// fmt.Println((*st).Effects)
 		st.Unlock()
 		base.Wait(1618/dot.Weight()+1)
 	}} else { for {
-		_, span := tracer.Start(ctx, "npc-regen")
+		_, span := tracer.Start(ctx, fmt.Sprintf("npc-%s-regen", (*st).Current.GetID()))
 		defer span.End()
 		if (*st).Current.Life.Wounded() { span.AddEvent("NPC died") ; return }
 		effect := base.NewEffect()
 		effect.Add_Self_HPRegen(32)
 		st.Lock()
 		(*st).Effects[(*effect).Time] = effect
-		fmt.Println((*st).Effects)
+		// fmt.Println((*st).Effects)
 		st.Unlock()
+		span.AddEvent(fmt.Sprintf("%d|+%d[%s]|+HP[%d]", -1, (*effect).Time, "none", 32))
 		base.Wait(4236)
 	}}
+}
+
+func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
+	pause, now := 1618, base.Epoch()
+	first, sum, counter := 0, 0, 0
+	prefix := "player" ; if (*st).Current.IsNPC() { prefix = "npc" }
+	_, span := tracer.Start(ctx, fmt.Sprintf("%s-%s-regen", prefix, (*st).Current.GetID()))
+	defer span.End()
+	for {
+		if len((*st).Effects) == 0 { base.Wait(float64(pause)) ; continue }
+		// fmt.Println("Before:", (*st).Effects, sum)
+		// step 1 read to limit
+		buffer := make(map[int]*base.Effect)
+		st.Lock() ; for ts, effect := range (*st).Effects {
+			if len(buffer) == 0 { first = ts }
+			if ts-first > pause { continue }
+			buffer[ts] = effect
+			counter++ ; sum += ts - first
+			if sum > counter * pause { break }
+		 } ; st.Unlock()
+		// step 2 sum and distribute
+		// instant, conditions, delayed := []base.Effect{}, []base.Effect{}, []base.Effect{}
+	
+		// step 3 consume
+	
+		// step 4 clean read from queue
+		st.Lock() ; for ts, _ := range buffer {
+			delete((*st).Effects, ts)
+		} ; st.Unlock()
+		
+		// step 5 redirect back leftovers
+	
+		// end
+		// fmt.Println((*st).Effects, sum)
+		base.Wait( float64(pause) / ( 1/math.Phi + math.Log2(1+math.Abs(float64(now-first))) ) )
+	}
 }

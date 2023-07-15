@@ -37,7 +37,8 @@ func newFoe(c *gin.Context) {
 	world.Unlock()
 	spanResponse.End()
 
-	go func(){ Regenerate(state, (*c).Request.Context()) }()
+	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
+	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
 	// select {}
 }
 
