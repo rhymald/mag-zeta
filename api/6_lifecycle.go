@@ -95,34 +95,48 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 	pause, now := 1618, base.Epoch()
 	first, sum, counter := 0, 0, 0
 	prefix := "player" ; if (*st).Current.IsNPC() { prefix = "npc" }
-	_, span := tracer.Start(ctx, fmt.Sprintf("%s-%s-regen", prefix, (*st).Current.GetID()))
+	ctxLifeCycle, span := tracer.Start(ctx, fmt.Sprintf("%s-%s-regen", prefix, (*st).Current.GetID()))
 	defer span.End()
 	for {
 		if len((*st).Effects) == 0 { base.Wait(float64(pause)) ; continue }
-		// fmt.Println("Before:", (*st).Effects, sum)
+		fmt.Println("Before:", (*st).Effects, sum)
+
 		// step 1 read to limit
+		_, spanReader := tracer.Start(ctxLifeCycle, "take-effects")
 		buffer := make(map[int]*base.Effect)
-		st.Lock() ; for ts, effect := range (*st).Effects {
+		st.Lock()
+		for ts, effect := range (*st).Effects {
 			if len(buffer) == 0 { first = ts }
 			if ts-first > pause { continue }
 			buffer[ts] = effect
 			counter++ ; sum += ts - first
 			if sum > counter * pause { break }
-		 } ; st.Unlock()
+		}
+		spanReader.AddEvent(fmt.Sprintf("Effects: { read: %d, total: %d }", counter, len((*st).Effects)))
+		st.Unlock()
+		spanReader.End()
+
 		// step 2 sum and distribute
 		// instant, conditions, delayed := []base.Effect{}, []base.Effect{}, []base.Effect{}
+		// timerInst, timerCond, timerDel := 0, 0, 0
+		// for 
 	
 		// step 3 consume
 	
 		// step 4 clean read from queue
-		st.Lock() ; for ts, _ := range buffer {
-			delete((*st).Effects, ts)
-		} ; st.Unlock()
+		_, spanDeleter := tracer.Start(ctxLifeCycle, "take-effects")
+		st.Lock() 
+		for ts, _ := range buffer { delete((*st).Effects, ts) }
+		spanDeleter.AddEvent(fmt.Sprintf("Effects: { read: %d, total: %d }", counter, len((*st).Effects)))
+		st.Unlock()
+		spanDeleter.End()
 		
 		// step 5 redirect back leftovers
 	
 		// end
-		// fmt.Println((*st).Effects, sum)
-		base.Wait( float64(pause) / ( 1/math.Phi + math.Log2(1+math.Abs(float64(now-first))) ) )
+		delay := float64(pause) / ( 1/math.Phi + math.Log2(1+math.Abs(float64(now-first))) )
+		fmt.Println("After:", (*st).Effects, sum)
+		span.AddEvent(fmt.Sprintf("WaitFor: %0.3fms", delay ))
+		base.Wait( delay )
 	}
 }

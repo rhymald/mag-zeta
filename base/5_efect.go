@@ -1,36 +1,83 @@
 package base
 
-var DotTags = []string{ 
-	"DE", // Element
-	"DW", // Weight
-	"DD", // Dot Delay
-}
+// var Instant_tags = []string{ "HPPP" }
+// var Delayed_tags = []string{ "DE", "DW", "DD" }
 
-var RegenTags = []string{ 
-	"HPR",  // HP promille portion
-}
+// var DotTags = []string{ 
+// 	"DE", // Dot Element
+// 	"DW", // Dot Weight
+// 	"DD", // Dot Delay
+// }
+// var RegenTags = []string{ 
+// 	"HPPP",  // HP promille portion
+// }
 
+// func GetTagTime(tag string) string {
+// 	for _, each := range Instant_tags { if each == tag { return "instant" } }
+// 	for _, each := range Delayed_tags { if each == tag { return "delayed" } }
+// 	return "ERROR"
+// }
+// func GetTagType(tag string) string {
+// 	for _, each := range DotTags   { if each == tag { return "Self_MakeDot" } }
+// 	for _, each := range RegenTags { if each == tag { return "Self_HPRegen" } }
+// 	return "ERROR"
+// }
+// func ValidEffect(effect map[string]int) bool {
+// 	first := ""
+// 	for tag, _ := range effect {
+// 		if len(first) == 0 { first = tag }
+// 		if tag != first { return false }
+// 	}
+// 	return true
+// }
+
+// main struct
 type Effect struct {
 	Time int
 	Collision [2]int
 	Effects []interface{}
 }
-
 func NewEffect() *Effect {
 	buffer := Effect{ Time: Epoch() }
 	return &buffer
 }
+// for _, model := range models {
+// 	 if u, ok := model.([]Type1); ok {
+// 		 for _, innerUser := range u {
+// 			 log.Printf("%#v", innerUser)
+// 		 }
+// 	 }
+// 	 if a, ok := model.([]Type2); ok {
+// 	 	 for _, innerArticle := range a {
+// 		  	log.Printf("%#v", innerArticle)
+// 		 }
+// 	 }
+// }
 
-func (ef *Effect) Add_Self_MakeDot(dot *Dot) {
-	buffer := make(map[string]int)
-	buffer["DD"] = CeilRound(1618/dot.Weight()+1)
-	buffer["DE"] = ElemIndex[dot.Elem()]
-	buffer["DW"] = (*dot)[dot.Elem()]
-	(*ef).Effects = append((*ef).Effects, buffer)
+
+// delayed
+type Effect_MakeDot struct {
+	Dot Dot
+	Delay int
+}
+func (ef *Effect) Add_Self_MakeDot(dot *Dot) { (*ef).Effects = append((*ef).Effects, 
+	Effect_MakeDot{ 
+		Dot: *dot,
+		Delay: CeilRound(1618/dot.Weight()+1),
+	})
 }
 
-func (ef *Effect) Add_Self_HPRegen(hp int) {
-	buffer := make(map[string]int)
-	buffer["HPR"] = hp
-	(*ef).Effects = append((*ef).Effects, buffer)
+
+// instant
+type Effect_HPRegen struct {
+	Portion int
 }
+func (ef *Effect) Add_Self_HPRegen(hp int) { (*ef).Effects = append((*ef).Effects, 
+	Effect_HPRegen{ 
+		Portion: hp,
+	})
+}
+
+
+// conditions
+// ...
