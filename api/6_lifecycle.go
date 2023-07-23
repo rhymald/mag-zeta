@@ -93,13 +93,14 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 }
 
 func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
-	pause, now := 1618, base.Epoch()
-	first, sum, counter := 0, 0, 0
+	pause := 1618
 	prefix := "player" ; if (*st).Current.IsNPC() { prefix = "npc" }
 	for {
+		first, sum, counter := 0, 0, 0
+		now := base.Epoch()
 		_, span := tracer.Start(ctx, fmt.Sprintf("%s-%d-regen", prefix, (*st).Current.GetID()))
 		defer span.End()
-		if len((*st).Effects) == 0 { base.Wait(float64(pause)) ; continue }
+		// if len((*st).Effects) == 0 { base.Wait(float64(pause)) ; continue }
 		fmt.Println("Before:", (*st).Effects, sum)
 
 		// step 1 read to limit
@@ -149,10 +150,11 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		accumulator := 0
 		// _, spanGatherer := tracer.Start(ctxLifeCycle, "gather-delayed-effects")
 		for diff, each := range delayed {
-			accumulator += diff
-			if accumulator < 0 {
+			fmt.Println("Accumulator", accumulator)
+			if accumulator <= pause {
 				instant = append(instant, each)
 				delete(delayed, diff)
+				fmt.Printf("Add to instant[%d]: %+v\n", diff, each)
 				span.AddEvent(fmt.Sprintf("Saved for consume: { %+v }", each))
 			} else {
 				tsNew := now + diff
@@ -163,8 +165,10 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 				(*sentBack).Effects = append((*sentBack).Effects, each)
 				(*st).Effects[tsNew] = sentBack
 				st.Unlock()
+				fmt.Printf("Back to queue[%d%+d]: %+v\n", now, diff, each)
 				span.AddEvent(fmt.Sprintf("Redirected back to queue: { %+v }", sentBack))
 			}
+			accumulator += diff
 		}
 		// spanGatherer.End()
 		
@@ -179,10 +183,12 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// spanDeleter.End()
 			
 		// end
-		delay := float64(pause) / ( 1/math.Phi + math.Log2(1+math.Abs(float64(now-first))) )
+		delay := 4236 - float64(pause) / ( math.Log2(1.4+math.Abs(float64(now-first))) )
 		fmt.Println("After:", (*st).Effects, sum)
 		span.AddEvent(fmt.Sprintf("Wait for: %0.3fms", delay ))
 		span.End()
+		fmt.Println("Delay:", delay, "ms")
+		fmt.Println("--------------------------------------------")
 		base.Wait( delay )
 	}
 }
