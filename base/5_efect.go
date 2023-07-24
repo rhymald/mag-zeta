@@ -63,11 +63,13 @@ type Effect_MakeDot struct {
 	Delay int
 }
 func (md Effect_MakeDot) Delayed() int { return md.Delay }
-func (ef *Effect) Add_Self_MakeDot(dot *Dot) { (*ef).Effects = append((*ef).Effects, 
+func (ef *Effect) Add_Self_MakeDot(dot *Dot) float64 { 
+	(*ef).Effects = append((*ef).Effects, 
 	Effect_MakeDot{ 
 		Dot: *dot,
 		Delay: CeilRound(1618/dot.Weight()+1),
 	})
+	return 1618/dot.Weight()+1
 }
 
 

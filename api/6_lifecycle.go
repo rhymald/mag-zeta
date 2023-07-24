@@ -69,14 +69,14 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 		stream := (*(*st).Current).Energy[picker]
 		(*st).Current.Unlock()
 		dot := stream.MakeDot()
-		effect.Add_Self_MakeDot(dot)
+		wait := effect.Add_Self_MakeDot(dot)
 		effect.Add_Self_HPRegen(8)
 		st.Lock()
 		(*st).Effects[(*effect).Time] = effect
 		span.AddEvent(fmt.Sprintf("%d|+%d[%s]|+HP[%d]", picker, (*effect).Time, dot.ToStr(), 8))
 		// fmt.Println((*st).Effects)
 		st.Unlock()
-		base.Wait(1618/dot.Weight()+1)
+		base.Wait(wait/5)
 	}} else { for {
 		_, span := tracer.Start(ctx, fmt.Sprintf("npc-%d-regen", (*st).Current.GetID()))
 		defer span.End()
@@ -93,21 +93,25 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 }
 
 func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
-	pause := 1618
+	pause := 618
 	prefix := "player" ; if (*st).Current.IsNPC() { prefix = "npc" }
 	for {
 		first, sum, counter := 0, 0, 0
 		now := base.Epoch()
 		_, span := tracer.Start(ctx, fmt.Sprintf("%s-%d-regen", prefix, (*st).Current.GetID()))
 		defer span.End()
-		// if len((*st).Effects) == 0 { base.Wait(float64(pause)) ; continue }
-		fmt.Println("Before:", (*st).Effects, sum)
+		st.Lock() 
+		startLen := len((*st).Effects) 
+		sleep := float64(pause) / math.Pow( math.Phi, math.Log2(2+float64(startLen))/math.Log2(3)-1 )
+		st.Unlock()
+		if startLen == 0 { base.Wait(float64(pause+1000)) ; fmt.Println("[0] Empty queue") ; fmt.Println("--------------------------------------------") ; continue }
+		st.Lock() ; fmt.Println("[B] Before:", len((*st).Effects), sum) ; st.Unlock()
 
 		// step 1 read to limit
 		// _, spanReader := tracer.Start(ctxLifeCycle, "take-effects")
 		buffer := make(map[int]*base.Effect)
 		st.Lock()
-		startLen := len((*st).Effects)
+		// startLen := len((*st).Effects)
 		for ts, effect := range (*st).Effects {
 			if len(buffer) == 0 { first = ts }
 			if ts-first > pause { continue }
@@ -115,13 +119,12 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 			counter++ ; sum += ts - first
 			if sum > counter * pause { break }
 		}
-		span.AddEvent(fmt.Sprintf("Effects: { read: %d, total: %d }", counter, len((*st).Effects)))
+		span.AddEvent(fmt.Sprintf("Effects: { read: %d, total: %d }", counter, startLen))
 		st.Unlock()
 		// spanReader.End()
 
 		// TBD conditions
 		instant, _, delayed := []interface{}{}, make(map[int]interface{}), make(map[int]interface{ Delayed() int })
-		timerInst, _, timerDel := 0, 0, 0
 		counterInst, _, counterDel := 0, 0, 0
 		// step 2 sum and distribute
 		// _, spanSorter := tracer.Start(ctxLifeCycle, "sort-effects")
@@ -129,13 +132,11 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 			switch kind := each.(type) {
 			case base.Effect_HPRegen:
 				instant = append(instant, each)
-				timerInst += ts
 				counterInst++
 			case base.Effect_MakeDot:
-				tsNew := now - ts - each.Delayed()
+				tsNew := (ts + each.Delayed()) - now
 				if _, ok := delayed[tsNew]; ok { tsNew = tsNew+1 }
 				delayed[tsNew] = each
-				timerDel += ts + each.Delayed()
 				counterDel++
 			default:
 				span.RecordError(errors.New(fmt.Sprintf("Unknown sub-effect[%d][%d] type[%v]: %+v", ts, idx, kind, each)))
@@ -147,17 +148,18 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// step 3 cut condies
 
 		// step 4 redirect back leftovers
-		accumulator := 0
+		threshold := base.CeilRound(sleep / math.Phi)
+		accumulator := -threshold
 		// _, spanGatherer := tracer.Start(ctxLifeCycle, "gather-delayed-effects")
+		counterDelayed, counterTransformed := []string{}, []string{}
 		for diff, each := range delayed {
-			fmt.Println("Accumulator", accumulator)
-			if accumulator <= pause {
+			if accumulator + diff < pause - threshold {
 				instant = append(instant, each)
 				delete(delayed, diff)
-				fmt.Printf("Add to instant[%d]: %+v\n", diff, each)
+				counterTransformed = append(counterTransformed, fmt.Sprintf("%+d", diff))
 				span.AddEvent(fmt.Sprintf("Saved for consume: { %+v }", each))
 			} else {
-				tsNew := now + diff
+				tsNew := now - diff - diff / 7
 				st.Lock()
 				if _, ok := (*st).Effects[tsNew]; ok { tsNew = tsNew+1 }
 				sentBack := base.NewEffect()
@@ -165,11 +167,14 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 				(*sentBack).Effects = append((*sentBack).Effects, each)
 				(*st).Effects[tsNew] = sentBack
 				st.Unlock()
-				fmt.Printf("Back to queue[%d%+d]: %+v\n", now, diff, each)
-				span.AddEvent(fmt.Sprintf("Redirected back to queue: { %+v }", sentBack))
+				span.AddEvent(fmt.Sprintf("Redirected back to queue: { %+v }", *sentBack))
+				counterDelayed = append(counterDelayed, fmt.Sprintf("%+d", diff))
 			}
 			accumulator += diff
 		}
+		fmt.Println("[4] Filtered:")
+		fmt.Println("  Back to queue:", counterDelayed)
+		fmt.Println("  Consumed:     ", counterTransformed)
 		// spanGatherer.End()
 		
 		// step 5 consume instants
@@ -183,12 +188,11 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// spanDeleter.End()
 			
 		// end
-		delay := 4236 - float64(pause) / ( math.Log2(1.4+math.Abs(float64(now-first))) )
-		fmt.Println("After:", (*st).Effects, sum)
-		span.AddEvent(fmt.Sprintf("Wait for: %0.3fms", delay ))
+		st.Lock() ; fmt.Println("[F] After:", len((*st).Effects), sum) ; st.Unlock()
+		span.AddEvent(fmt.Sprintf("Wait for: %0.3fms", sleep ))
 		span.End()
-		fmt.Println("Delay:", delay, "ms")
+		fmt.Println("[F] Sleep:", sleep, "ms")
 		fmt.Println("--------------------------------------------")
-		base.Wait( delay )
+		base.Wait( sleep )
 	}
 }
