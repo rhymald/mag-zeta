@@ -21,12 +21,16 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 		effect := base.NewEffect()
 		(*st).Current.Lock()
 		if (*st).Current.Life.Dead() { (*st).Current.Unlock() ; span.AddEvent("Player died") ; return }
-		picker := base.EpochNS() % len((*(*st).Current).Energy)
-		stream := (*(*st).Current).Energy[picker]
+		count, mean := len((*(*st).Current).Energy), 0.0
+		for picker:=0 ; picker<len((*(*st).Current).Energy) ; picker++ {
+			stream := (*(*st).Current).Energy[picker]
+			dot := stream.MakeDot()
+			pause := effect.Add_Self_MakeDot(dot)
+			mean += 1/pause
+		}
+		wait := float64(count) / mean
 		(*st).Current.Unlock()
-		dot := stream.MakeDot()
-		wait := effect.Add_Self_MakeDot(dot)
-		effect.Add_Self_HPRegen(8)
+		effect.Add_Self_HPRegen(16)
 		st.Lock()
 		(*st).Effects[(*effect).Time] = effect
 		span.AddEvent(fmt.Sprintf("Emmiting regeneration effect: { %+v }", *effect))
@@ -37,7 +41,7 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 		defer span.End()
 		if (*st).Current.Life.Wounded() { span.AddEvent("NPC died") ; return }
 		effect := base.NewEffect()
-		effect.Add_Self_HPRegen(32)
+		effect.Add_Self_HPRegen(64)
 		st.Lock()
 		(*st).Effects[(*effect).Time] = effect
 		st.Unlock()
