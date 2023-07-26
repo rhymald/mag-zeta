@@ -14,7 +14,7 @@ type Simplified struct {
 	Power int `json:"Power"`
 	// xyz
 	XY [2]int `json:"XY"`
-	Direction int `json:"Direction"`
+	// Direction int `json:"Direction"`
 }
 
 func (c *Character) Simplify() Simplified {
@@ -37,6 +37,6 @@ func (c *Character) Simplify() Simplified {
 	buffer.Barrier = barrier
 	buffer.Attune = "TBD"
 	buffer.XY = [2]int{ base.CeilRound(200*base.Rand()-100), base.CeilRound(200*base.Rand()-100) }
-	buffer.Direction = base.FloorRound(2000*base.Rand()-1000)
+	// buffer.Direction = base.FloorRound(2000*base.Rand()-1000)
 	return buffer
 }

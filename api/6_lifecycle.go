@@ -10,50 +10,6 @@ import (
 	"errors"
 )
 
-// func charLiveAlive(c *play.Character, ctx context.Context) {
-// 	_, span := tracer.Start(ctx, "lifecycle")
-// 	defer span.End()
-// 	if c.IsNPC() {
-// 		for {
-// 			c.Lock()
-// 			if c.Life.Wounded() { c.Unlock() ; span.AddEvent("Character died") ; return }
-// 			npcRegen((*c).Life, &(*c).ID, &span)
-// 			c.Unlock()
-// 			base.Wait(4096)
-// 		}
-// 	} else {
-// 		for {
-// 			wait := 4096.0
-// 			c.Lock()
-// 			if c.Life.Dead() { span.AddEvent("Character died") ; return }
-// 			energyFull := len((*c).Pool) >= base.ChancedRound((*(*c).Atts).Capacity)
-// 			if energyFull { 
-// 				c.Unlock()
-// 				span.AddEvent("Energy full, wait")
-// 				span.End()
-// 			} else {
-// 				wait = playerRegen((*c).Life, &(*c).Pool, &(*c).ID, &(*c).Energy, &span)
-// 				c.Unlock()
-// 			}
-// 			base.Wait(wait)
-// 		}
-// 	}
-// }
-// [v] regen
-// + potion(s)
-// + move
-// + jinx[e], punch[p] 
-// func playerRegen(hps *base.Life, pool *map[int]*base.Dot, ids *map[string]int, energy *[]*base.Stream, span *trace.Span) float64 {
-// 	picker := base.EpochNS() % len(*energy)
-// 	stream := (*energy)[picker]
-// 	idx, dot := play.GetDotFrom(pool, stream, ids) // consumes
-// 	hp := 8
-// 	hps.HealDamage(hp)
-// 	(*ids)["Life"] = base.Epoch()
-// 	(*span).AddEvent(fmt.Sprintf("%d|+%d[%s]|+HP[%d]", picker, idx, dot.ToStr(), hp))
-// 	return 1000*dot.Weight()
-// }
-
 func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 	isNPC := (*st).Current.IsNPC()
 	if !isNPC { for {
@@ -93,7 +49,7 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 }
 
 func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
-	pause := 618
+	pause := 1618
 	prefix := "player" ; if (*st).Current.IsNPC() { prefix = "npc" }
 	for {
 		first, sum, counter := 0, 0, 0
@@ -124,18 +80,20 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// spanReader.End()
 
 		// TBD conditions
-		instant, _, delayed := []interface{}{}, make(map[int]interface{}), make(map[int]interface{ Delayed() int })
+		instant, _, delayed := make(map[int]base.Different_Effects), make(map[int]base.Different_Effects), make(map[int]base.Different_Effects)
 		counterInst, _, counterDel := 0, 0, 0
 		// step 2 sum and distribute
 		// _, spanSorter := tracer.Start(ctxLifeCycle, "sort-effects")
 		for ts, each_effect := range buffer { for idx, each := range (*each_effect).Effects {
 			switch kind := each.(type) {
 			case base.Effect_HPRegen:
-				instant = append(instant, each)
+				tsNew := ts
+				for { if _, ok := instant[tsNew]; ok { tsNew = tsNew+1 } else {break} }
+				instant[tsNew] = each
 				counterInst++
 			case base.Effect_MakeDot:
 				tsNew := (ts + each.Delayed()) - now
-				if _, ok := delayed[tsNew]; ok { tsNew = tsNew+1 }
+				for { if _, ok := delayed[tsNew]; ok { tsNew = tsNew+1 } else {break} }
 				delayed[tsNew] = each
 				counterDel++
 			default:
@@ -154,14 +112,16 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		counterDelayed, counterTransformed := []string{}, []string{}
 		for diff, each := range delayed {
 			if accumulator + diff < pause - threshold {
-				instant = append(instant, each)
+				tsNew := now + diff
+				for { if _, ok := instant[tsNew]; ok { tsNew = tsNew+1 } else {break} }
+				instant[tsNew] = each
 				delete(delayed, diff)
 				counterTransformed = append(counterTransformed, fmt.Sprintf("%+d", diff))
 				span.AddEvent(fmt.Sprintf("Saved for consume: { %+v }", each))
 			} else {
 				tsNew := now - diff - diff / 7
 				st.Lock()
-				if _, ok := (*st).Effects[tsNew]; ok { tsNew = tsNew+1 }
+				for { if _, ok := (*st).Effects[tsNew]; ok { tsNew = tsNew+1 } else {break} }
 				sentBack := base.NewEffect()
 				(*sentBack).Time = tsNew
 				(*sentBack).Effects = append((*sentBack).Effects, each)
@@ -178,6 +138,34 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// spanGatherer.End()
 		
 		// step 5 consume instants
+		hpregens := 0
+		makedots := make(map[int]base.Dot)
+		// fmt.Println("[5] Applying")
+		for time, each := range instant {
+			switch kind := each.(type) {
+			case base.Effect_HPRegen:
+				// fmt.Printf("  Regen HP: %+v\n", each)
+				hpregens += each.HP()
+			case base.Effect_MakeDot:
+				// fmt.Printf("  Plus Dot: %+v\n", each)
+				ts, dots := each.Dots()
+				for _, dot := range dots { makedots[ts+time] = dot }
+			default:
+				span.RecordError(errors.New(fmt.Sprintf("Unknown sub-effect type[%v] to apply: %+v", kind, each)))
+			}
+		}
+		fmt.Println("[5] To apply:")
+		fmt.Println("  HP:", hpregens)
+		fmt.Println("  Dots:", makedots)
+		(*st).Current.Lock()
+		(*(*st).Current).Life.HealDamage(hpregens)
+		for ts, dot := range makedots {
+			tsNew := ts
+			for { if _, ok := (*(*st).Current).Pool[tsNew]; ok { tsNew = tsNew+1 } else { break } }
+			(*(*st).Current).Pool[tsNew] = &dot
+		}
+		(*st).Current.Unlock()
+		fmt.Println("[5] Applied")
 
 		// step F clean read from queue
 		// _, spanDeleter := tracer.Start(ctxLifeCycle, "delete-effects")

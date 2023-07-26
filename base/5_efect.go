@@ -35,10 +35,15 @@ package base
 type Effect struct {
 	Time int
 	Collision [2]int
-	Effects []interface{
-		Delayed() int
-	}
+	Effects []Different_Effects
 }
+type Different_Effects interface{
+	Delayed() int
+	HP() int
+	Dots() (int, []Dot)
+}
+
+
 func NewEffect() *Effect {
 	buffer := Effect{ Time: Epoch() }
 	return &buffer
@@ -63,6 +68,8 @@ type Effect_MakeDot struct {
 	Delay int
 }
 func (md Effect_MakeDot) Delayed() int { return md.Delay }
+func (md Effect_MakeDot) HP() int { return 0 }
+func (md Effect_MakeDot) Dots() (int, []Dot) { return md.Delay, []Dot{ md.Dot } }
 func (ef *Effect) Add_Self_MakeDot(dot *Dot) float64 { 
 	(*ef).Effects = append((*ef).Effects, 
 	Effect_MakeDot{ 
@@ -78,6 +85,8 @@ type Effect_HPRegen struct {
 	Portion int
 }
 func (md Effect_HPRegen) Delayed() int { return 0 }
+func (md Effect_HPRegen) HP() int { return md.Portion }
+func (md Effect_HPRegen) Dots() (int, []Dot) { return 0, []Dot{} }
 func (ef *Effect) Add_Self_HPRegen(hp int) { (*ef).Effects = append((*ef).Effects, 
 	Effect_HPRegen{ 
 		Portion: hp,
