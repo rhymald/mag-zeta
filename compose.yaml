@@ -4,6 +4,7 @@ services:
 
   mag: 
     build: .
+  # image: rhymald/mag:latest
     ports:
       - 4917:4917
       - 9093:9093
@@ -54,7 +55,7 @@ services:
       - jaeger
 
   cockroachdb:
-    image: cockroachdb/cockroach
+    image: cockroachdb/cockroach:latest
     command: start-single-node --http-addr=localhost:8080
     ports: 
       - 8080:8080
@@ -62,8 +63,7 @@ services:
     environment: 
       - COCKROACH_DATABASE=grid
       - COCKROACH_USER=rhymald
-      - COCKROACH_PASSWORD=rhymald
-
+      - COCKROACH_PASSWORD=454010
 
 volumes:
   grafana:
