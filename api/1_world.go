@@ -10,6 +10,8 @@ import (
 
 type Location struct {
 	ByID map[int]*play.State
+	// Grid [][]string
+	// PosCache connection.to.table
 	sync.Mutex
 }
 

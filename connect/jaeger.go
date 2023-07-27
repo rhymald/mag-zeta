@@ -1,4 +1,4 @@
-package tracing
+package connect
 
 import (
   "go.opentelemetry.io/otel/exporters/jaeger"
