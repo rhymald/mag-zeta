@@ -53,5 +53,17 @@ services:
     depends_on: 
       - jaeger
 
+  cockroachdb:
+    image: cockroachdb/cockroach
+    command: start-single-node --http-addr=localhost:8080
+    ports: 
+      - 8080:8080
+      - 26257:26257
+    environment: 
+      - COCKROACH_DATABASE=grid
+      - COCKROACH_USER=rhymald
+      - COCKROACH_PASSWORD=rhymald
+
+
 volumes:
   grafana:
