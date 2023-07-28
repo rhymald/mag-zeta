@@ -23,12 +23,13 @@ func (c *Character) Simplify() Simplified {
 	npc := c.IsNPC()
 	buffer.HP = (*c).Life.Rate
 	if npc { 
-		buffer.ID = "Dummy"
+		// buffer.ID = "Dummy"
 		buffer.Power = base.ChancedRound((*(*c).Atts).Capacity) 
 	} else { 
-		buffer.ID = "Player"
+		// buffer.ID = "Player"
 		buffer.Power = len((*c).Pool)
 	}
+	buffer.ID = c.GetID()
 	buffer.TS = (*c).ID
 	c.Unlock()
 	// buffer.XY = xy

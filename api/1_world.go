@@ -9,7 +9,7 @@ import (
 )
 
 type Location struct {
-	ByID map[int]*play.State
+	ByID map[string]*play.State
 	Grid struct {
 		X map[string]int // axis
 		Y map[string]int // axis
@@ -28,7 +28,7 @@ var (
 )
 
 func newWorld() *Location {
-	buffer := Location{ ByID: make(map[int]*play.State) }
+	buffer := Location{ ByID: make(map[string]*play.State) }
 	buffer.Grid.Zero = [2]int{0, 0}
 	buffer.Grid.Y = make(map[string]int)
 	buffer.Grid.X = make(map[string]int)

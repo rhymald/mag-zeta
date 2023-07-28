@@ -6,9 +6,9 @@ const (
 )
 
 type Life struct {
-	Rate int
-	Barrier map[string]int
-}
+	Rate int `json:"Rate"`
+	Barrier map[string]int `json:"Barrier"`
+} 
 
 
 // NEW

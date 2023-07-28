@@ -6,24 +6,24 @@ import (
 )
 
 type State struct {
-	Current *Character
-	Effects map[int]*base.Effect
+	Trace map[int][3]int `json:"Trace"` // time: dir + x + y
+	Effects map[int]*base.Effect `json:"Effects"`
 	Later struct {
-		Time map[string]int
+		Time map[string]int `json:"Time"`
 		// Body *base.Stream
 		// Energy []*base.Stream
-		Life base.Life
+		Life base.Life `json:"Life"`
 		// +Actions 
-	}
+	} `json:"Later"`
 	Writing struct {
-		Time map[string]int
+		Time map[string]int `json:"Time"`
 		// Body base.Stream
 		// Energy []base.Stream
-		Life base.Life
+		Life base.Life `json:"Life"`
 		// +Actions
-	}
-	Trace map[int][3]int // time: dir + x + y
+	} `json:"Writing"`
 	sync.Mutex
+	Current *Character `json:"Current"`
 }
 
 func (c *Character) NewState() *State {
@@ -45,6 +45,7 @@ func (c *Character) NewState() *State {
 	return &buffer
 }
 
+// OLD diff rewritten! add to new result!!!
 func (st *State) UpdLife() { // used after write
 	(*st).Current.Lock()
 	st.Lock()

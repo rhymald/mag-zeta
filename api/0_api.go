@@ -11,6 +11,8 @@ func RunAPI() {
 	router.GET("/spawn", newFoe)
 	router.GET("/around", getAll)
 	router.GET("/login", newPlayer)
+	router.GET("/test", showGrid)
+	router.GET("/test/:id", showState)
 	metrics := gin.Default()
 	metrics.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	go func(){ router.Run(":4917") }()

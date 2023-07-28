@@ -33,9 +33,9 @@ package base
 
 // main struct
 type Effect struct {
-	Time int
-	Collision [2]int
-	Effects []Different_Effects
+	Time int `json:"Time"`
+	Collision [2]int `json:"Collision"`
+	Effects []Different_Effects `json:"Effects"`
 }
 type Different_Effects interface{
 	Delayed() int
@@ -64,8 +64,8 @@ func NewEffect() *Effect {
 
 // delayed
 type Effect_MakeDot struct {
-	Dot Dot
-	Delay int
+	Dot Dot `json:"Dot"`
+	Delay int `json:"Delay"`
 }
 func (md Effect_MakeDot) Delayed() int { return md.Delay }
 func (md Effect_MakeDot) HP() int { return 0 }
@@ -82,7 +82,7 @@ func (ef *Effect) Add_Self_MakeDot(dot *Dot) float64 {
 
 // instant
 type Effect_HPRegen struct {
-	Portion int
+	Portion int `json:"Portion"`
 }
 func (md Effect_HPRegen) Delayed() int { return 0 }
 func (md Effect_HPRegen) HP() int { return md.Portion }
