@@ -22,6 +22,7 @@ type State struct {
 		Life base.Life
 		// +Actions
 	}
+	Trace map[int][3]int // time: dir + x + y
 	sync.Mutex
 }
 
@@ -31,21 +32,24 @@ func (c *Character) NewState() *State {
 	buffer.Current = c
 	buffer.Effects = make(map[int]*base.Effect)
 	buffer.Later.Time = make(map[string]int)
-	buffer.Later.Time["life"] = base.EpochNS()
+	buffer.Later.Time["Life"] = base.Epoch()
 	buffer.Later.Life = *((*c).Life)
+	// moved, position, direction := c.Where()
 	c.Unlock()
 	buffer.Writing.Time = make(map[string]int)
-	buffer.Writing.Time["life"] = 0 
+	buffer.Writing.Time["Life"] = 0 
 	buffer.Writing.Life = *(base.MakeLife())
 	buffer.Writing.Life.Rate = 0
+	buffer.Trace = make(map[int][3]int)
+	// buffer.Trace[moved] = [3]int{ direction, position[0], position[1] }
 	return &buffer
 }
 
 func (st *State) UpdLife() { // used after write
 	(*st).Current.Lock()
 	st.Lock()
-	timeGape := base.EpochNS() - (*st).Later.Time["life"]
-	(*st).Writing.Time["life"] = timeGape
+	timeGape := base.EpochNS() - (*st).Later.Time["Life"]
+	(*st).Writing.Time["Life"] = timeGape
 	lifeGape := (*st.Current.Life).Rate - (*st).Later.Life.Rate
 	(*st).Writing.Life.Rate = lifeGape
 	barriers := make(map[string]int)
@@ -54,9 +58,16 @@ func (st *State) UpdLife() { // used after write
 		if change != 0 { barriers[element] = change }
 	}
 	(*st).Writing.Life.Barrier = barriers
-	(*st).Later.Time["life"] = base.EpochNS()
+	(*st).Later.Time["Life"] = base.EpochNS()
 	(*st).Later.Life = *((*(*st).Current).Life)
 	st.Unlock()
 	(*st).Current.Unlock()
 }
 // +write life - tbd in thicket package
+
+func (st *State) Move() {
+	// clean from old
+	// compare trace, current, db
+	// add to trace id current newe
+	// add to current if trace later 
+}

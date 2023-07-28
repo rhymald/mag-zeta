@@ -29,7 +29,10 @@ func newPlayer(c *gin.Context) {
 	world.Lock()
 	state := player.NewState()
 	if err == nil {
-		(*world).ByID[player.GetID()] = state
+		id := player.GetID()
+		(*world).ByID[id] = state
+		// ts, pos, dir := player.Where()
+		// (*world).Grid.X[ts] = pos
 		c.IndentedJSON(200, "Successfully logged in")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid player character"))
