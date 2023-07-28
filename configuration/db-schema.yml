@@ -1,0 +1,25 @@
+name: location
+ttl_expire_after: 5m
+grid:
+  # System:
+  - name: key
+    type: string
+    description: unique key
+    func: gen_random_uuid()
+  - name: tti
+    type: time
+    sectription: timestamp
+    func: current_timestamp()
+  # Data:
+  - name: id
+    type: string
+    decription: object uuid
+  - name: x
+    type: int
+    description: x-axis in millimeters
+  - name: y
+    type: int
+    description: y-axis in millimeters
+  - name: t
+    type: int
+    description: time-axis in milliseconds

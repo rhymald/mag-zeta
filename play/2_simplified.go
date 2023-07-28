@@ -4,6 +4,7 @@ import "rhymald/mag-zeta/base"
 
 type Simplified struct {
 	ID string `json:"ID"`
+	TS map[string]int `json:"TS"` 
 	// health
 	HP int `json:"HP"`
 	Barrier int `json:"Barrier"`
@@ -13,11 +14,12 @@ type Simplified struct {
 	Power int `json:"Power"`
 	// xyz
 	XY [2]int `json:"XY"`
-	Direction int `json:"Direction"`
+	// Direction int `json:"Direction"`
 }
 
 func (c *Character) Simplify() Simplified {
 	var buffer Simplified
+	c.Lock()
 	npc := c.IsNPC()
 	buffer.HP = (*c).Life.Rate
 	if npc { 
@@ -27,11 +29,14 @@ func (c *Character) Simplify() Simplified {
 		buffer.ID = "Player"
 		buffer.Power = len((*c).Pool)
 	}
+	buffer.TS = (*c).ID
+	c.Unlock()
+	// immitation:
 	barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
 	buffer.Wound = penalty
 	buffer.Barrier = barrier
 	buffer.Attune = "TBD"
 	buffer.XY = [2]int{ base.CeilRound(200*base.Rand()-100), base.CeilRound(200*base.Rand()-100) }
-	buffer.Direction = base.FloorRound(2000*base.Rand()-1000)
+	// buffer.Direction = base.FloorRound(2000*base.Rand()-1000)
 	return buffer
 }
