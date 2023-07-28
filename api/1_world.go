@@ -10,15 +10,33 @@ import (
 
 type Location struct {
 	ByID map[int]*play.State
-	// Grid [][]string
+	Grid struct {
+		X map[string]int // axis
+		Y map[string]int // axis
+		T map[string]int // time
+		Vec map[int]string // direction from 0, 0
+		Rad map[int]string // distance from 0, 0
+		Zero [2]int // 0, 0
+	}
 	// PosCache connection.to.table
 	sync.Mutex
 }
 
 var (
-	world = &Location{ ByID: make(map[int]*play.State) }
+	world = newWorld()
 	tracer = otel.Tracer("api")
 )
+
+func newWorld() *Location {
+	buffer := Location{ ByID: make(map[int]*play.State) }
+	buffer.Grid.Zero = [2]int{0, 0}
+	buffer.Grid.Y = make(map[string]int)
+	buffer.Grid.X = make(map[string]int)
+	buffer.Grid.T = make(map[string]int)
+	buffer.Grid.Vec = make(map[int]string)
+	buffer.Grid.Rad = make(map[int]string)
+	return &buffer
+}
 
 func getAll(c *gin.Context) { 
 	ctx, span := tracer.Start((*c).Request.Context(), "pull-all-objects")
