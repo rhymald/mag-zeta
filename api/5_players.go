@@ -3,11 +3,12 @@ package api
 import (
 	"errors"
 	"rhymald/mag-zeta/play"
-	// "rhymald/mag-zeta/base"
+	"rhymald/mag-zeta/base"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
 	// "go.opentelemetry.io/otel/trace"
 	// "fmt"
+	"math"
 )
 
 func newPlayer(c *gin.Context) { 
@@ -40,5 +41,6 @@ func newPlayer(c *gin.Context) {
 	
 	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
 	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
-	go func(){ state.Move() ; state.Move() ; state.Move() ; state.Move() ; state.Move() }()
+	go func(){ for x:=0 ; x<10 ; x++ {state.Move()} }()
+	go func(){ for x:=0 ; x<25 ; x++ {state.Turn(1/math.Phi/math.Phi * float64(base.Epoch()%3-1))} }()
 }

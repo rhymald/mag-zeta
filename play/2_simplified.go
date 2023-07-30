@@ -13,11 +13,15 @@ type Simplified struct {
 	Attune string `json:"Attune"`
 	Power int `json:"Power"`
 	// xyz
-	// XY [2]int `json:"XY"`
-	// Dir int `json:"Direction"`
+	RXY struct {
+		RNow int `json:"RNow"`
+		Rotate int `json:"Rotate"`
+		XYNow [2]int `json:"XYNow"`
+		XYBefore [3][2]int `json:"XYBefore"`
+	} `json:"RXY"`
 }
 
-func (c *Character) Simplify() Simplified {
+func (c *Character) Simplify(path [5][2]int) Simplified {
 	var buffer Simplified
 	c.Lock()
 	npc := c.IsNPC()
@@ -32,8 +36,10 @@ func (c *Character) Simplify() Simplified {
 	buffer.ID = c.GetID()
 	buffer.TS = (*c).ID
 	c.Unlock()
-	// buffer.XY = xy
-	// buffer.Dir = d
+	buffer.RXY.XYNow = path[1]
+	buffer.RXY.RNow = path[0][0]
+	buffer.RXY.Rotate = path[0][1]
+	for i, each := range path[2:5] { buffer.RXY.XYBefore[i] = each }
 	// immitation:
 	barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
 	buffer.Wound = penalty

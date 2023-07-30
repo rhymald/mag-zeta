@@ -83,18 +83,84 @@ func (st *State) Move() {
 	(*st).Trace[base.EpochNS()] = newstep
 	st.Unlock()
 	base.Wait(math.Sqrt2*1000) // 1.4 - 0.25
-	// clean from old
-	// compare trace, current, db
-	// add to trace id current newe
-	// add to current if trace later 
 }
 
-func (st *State) Turn(angle float64) {
-	// turn := base.Round( 1000 / (6 + distance) / 2 )
-	// if traceLen % 2 == 1 { turn = -turn } 
-	// turn += latestStep[0]
-	// for { if turn > 999 { turn += -2000 } else if turn < -999 { turn += 2000 } else { break } }
+func (st *State) Turn(rotate float64) {
+	if math.Abs(rotate) < 1/512 { return }
+	st.Lock()
+	traceLen := len((*st).Trace)
+	if traceLen == 0 { (*st).Trace[base.EpochNS()] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
+	buffer, latest := (*st).Trace, 0
+	for ts, _ := range buffer { if ts > latest { latest = ts } }
+	latestStep := (*st).Trace[latest]
+	// distance := (*st.Current.Atts).Agility // static yet
+	angle := float64(latestStep[0])/1000 * math.Pi / 180
+	newAng := base.Round(angle + rotate*1000)
+	for { if newAng > 999 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
+ 	newstep := [3]int{
+		newAng,
+		latestStep[1],
+		latestStep[2],
+	}
+	(*st).Trace[base.EpochNS()] = newstep
+	st.Unlock()
+	base.Wait(1000/math.Phi/math.Phi) // 0.3 - 0.032
 }
 
-func (st *State) Collide(object base.Stream) {
+func (st *State) Collide(object *base.Stream) {
+	// TBD
+}
+
+func (st *State) Path() [5][2]int {
+	period := 4236 * 1000000 // ns
+	now := base.EpochNS()
+	st.Lock() ; trace := (*st).Trace ; st.Unlock()
+	if len(trace) == 0 { return [5][2]int{} }
+	xs, ys, rs, counter := 0, 0, 0, 0
+	xs1, ys1, counter1 := 0, 0, 0
+	xs2, ys2, counter2 := 0, 0, 0
+	max := 0
+	for ts, rXY := range trace {
+		if now - ts < period { counter++ ; xs += rXY[1] ; ys += rXY[2] }
+		if now - ts < period / 4 { xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0] }
+		if now - ts < period / 2 { xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ }
+		if ts > max { max = ts }
+	}
+	latest := trace[max]
+	rotate := latest[0] - (rs + latest[0]) / (counter2 + 1)
+	for { if rotate > 999 { rotate += -2000 } else if rotate < -1000 { rotate += 2000 } else { break }}
+	if counter <= 1 { 
+		return [5][2]int{
+			[2]int{ latest[0], 0 },
+			[2]int{ latest[1], latest[2] },
+			[2]int{ latest[1], latest[2] },
+			[2]int{ latest[1], latest[2] },
+			[2]int{ latest[1], latest[2] },
+		}
+	}
+	if counter1 == 0 {
+		return [5][2]int{
+			[2]int{ latest[0], rotate },
+			[2]int{ latest[1], latest[2] },
+			[2]int{ xs/counter, ys/counter },
+			[2]int{ xs/counter, ys/counter },
+			[2]int{ xs/counter, ys/counter },
+		}	
+	}
+	if counter2 == 0 {
+		return [5][2]int{
+			[2]int{ latest[0], rotate },
+			[2]int{ latest[1], latest[2] },
+			[2]int{ xs1/counter1, ys1/counter1 },
+			[2]int{ xs1/counter1, ys1/counter1 },
+			[2]int{ xs/counter, ys/counter },
+		}	
+	}
+	return [5][2]int{
+		[2]int{ latest[0], rotate },
+		[2]int{ latest[1], latest[2] },
+		[2]int{ xs2/counter2, ys2/counter2 },
+		[2]int{ xs1/counter1, ys1/counter1 },
+		[2]int{ xs/counter, ys/counter },
+	}
 }

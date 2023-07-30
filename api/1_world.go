@@ -46,7 +46,7 @@ func getAll(c *gin.Context) {
 	_, spanPlayers := tracer.Start(ctx, "players")
 	countOfPlayers := 0
 	world.Lock()
-	for _, each := range (*world).ByID { buffer = append(buffer, (*each).Current.Simplify()) ; if (*each).Current.IsNPC() == false { countOfPlayers++ }}
+	for _, each := range (*world).ByID { buffer = append(buffer, (*each).Current.Simplify(each.Path())) ; if (*each).Current.IsNPC() == false { countOfPlayers++ }}
 	world.Unlock()
 	span.SetAttributes(attribute.Int("Players", countOfPlayers))
 	span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
