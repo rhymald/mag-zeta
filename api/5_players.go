@@ -31,8 +31,6 @@ func newPlayer(c *gin.Context) {
 	if err == nil {
 		id := player.GetID()
 		(*world).ByID[id] = state
-		// ts, pos, dir := player.Where()
-		// (*world).Grid.X[ts] = pos
 		c.IndentedJSON(200, "Successfully logged in")
 	} else {
 		c.AbortWithError(500, errors.New("Invalid player character"))
@@ -42,4 +40,5 @@ func newPlayer(c *gin.Context) {
 	
 	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
 	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
+	go func(){ state.Move() ; state.Move() ; state.Move() ; state.Move() ; state.Move() }()
 }
