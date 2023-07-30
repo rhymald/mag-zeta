@@ -10,6 +10,14 @@ services:
       - 9093:9093
     environment:
       - GIN_MODE=release
+    deploy:
+      resources:
+        limits:
+          # cpus: '0.2'
+          memory: 6000M
+        reservations:
+          # cpus: '0.5'
+          memory: 6000M
 
   prometheus:
     image: prom/prometheus:latest

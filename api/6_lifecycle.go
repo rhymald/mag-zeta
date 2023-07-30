@@ -62,8 +62,8 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		startLen := len((*st).Effects) 
 		sleep := float64(pause) / math.Pow( math.Phi, math.Log2(2+float64(startLen))/math.Log2(3)-1 )
 		st.Unlock()
-		if startLen == 0 { base.Wait(float64(pause+1000)) ; fmt.Println("BROKER[0] Empty queue") ; fmt.Println("--------------------------------------------") ; continue }
-		st.Lock() ; fmt.Println("BROKER[0] Before:", len((*st).Effects), sum) ; st.Unlock()
+		if startLen == 0 { base.Wait(float64(pause+1000)) ; continue }
+		// st.Lock() ; fmt.Println("BROKER[0] Before:", len((*st).Effects), sum) ; st.Unlock()
 
 		// step 1 read to limit
 		buffer := make(map[int]*base.Effect)
@@ -106,14 +106,14 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// step 4 redirect back leftovers
 		threshold := base.CeilRound(sleep / math.Phi)
 		accumulator := -threshold
-		counterDelayed, counterTransformed := []string{}, []string{}
+		// counterDelayed, counterTransformed := []string{}, []string{}
 		for diff, each := range delayed {
 			if accumulator + diff < pause - threshold {
 				tsNew := now + diff
 				for { if _, ok := instant[tsNew]; ok { tsNew = tsNew+1 } else {break} }
 				instant[tsNew] = each
 				delete(delayed, diff)
-				counterTransformed = append(counterTransformed, fmt.Sprintf("%+d", diff))
+				// counterTransformed = append(counterTransformed, fmt.Sprintf("%+d", diff))
 				span.AddEvent(fmt.Sprintf("Saved for consume: { %+v }", each))
 			} else {
 				tsNew := now - diff - diff / 7
@@ -125,13 +125,13 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 				(*st).Effects[tsNew] = sentBack
 				st.Unlock()
 				span.AddEvent(fmt.Sprintf("Redirected back to queue: { %+v }", *sentBack))
-				counterDelayed = append(counterDelayed, fmt.Sprintf("%+d", diff))
+				// counterDelayed = append(counterDelayed, fmt.Sprintf("%+d", diff))
 			}
 			accumulator += diff
 		}
-		fmt.Println("BROKER[4] Filtered:")
-		fmt.Println("  Back to queue:", counterDelayed)
-		fmt.Println("  Consumed:     ", counterTransformed)
+		// fmt.Println("BROKER[4] Filtered:")
+		// fmt.Println("  Back to queue:", counterDelayed)
+		// fmt.Println("  Consumed:     ", counterTransformed)
 		
 		// step 5 consume instants
 		hpregens := 0
@@ -147,9 +147,9 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 				span.RecordError(errors.New(fmt.Sprintf("Unknown sub-effect type[%v] to apply: %+v", kind, each)))
 			}
 		}
-		fmt.Println("BROKER[5] To apply:")
-		fmt.Println("  HP:", hpregens)
-		fmt.Println("  Dots:", makedots)
+		// fmt.Println("BROKER[5] To apply:")
+		// fmt.Println("  HP:", hpregens)
+		// fmt.Println("  Dots:", makedots)
 		(*st).Current.Lock()
 		(*(*st).Current).Life.HealDamage(hpregens)
 		(*(*st).Current).ID["Life"] = base.EpochNS()
@@ -161,18 +161,18 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		}
 		span.AddEvent(fmt.Sprintf("Dots to append: { %v }", makedots))
 		(*st).Current.Unlock()
-		fmt.Println("BROKER[5] Applied")
+		// fmt.Println("BROKER[5] Applied")
 
 		// step F clean read from queue
 		st.Lock() 
 		for ts, _ := range buffer { delete((*st).Effects, ts) }
 		span.AddEvent(fmt.Sprintf("Effects: { read: %d, total before: %d, total after: %d }", counter, startLen, len((*st).Effects)))
-		fmt.Println("BROKER[F] After:", len((*st).Effects), sum)
+		// fmt.Println("BROKER[F] After:", len((*st).Effects), sum)
 		st.Unlock()
 		span.AddEvent(fmt.Sprintf("Wait for: %0.3fms", sleep ))
 		span.End()
-		fmt.Println("BROKER[F] Sleep:", sleep, "ms")
-		fmt.Println("--------------------------------------------")
+		// fmt.Println("BROKER[F] Sleep:", sleep, "ms")
+		// fmt.Println("--------------------------------------------")
 		base.Wait( sleep )
 	}
 }

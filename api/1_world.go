@@ -2,10 +2,12 @@ package api
 
 import (
 	"rhymald/mag-zeta/play"
+	"rhymald/mag-zeta/base"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"sync"
+	"math"
 )
 
 type Location struct {
@@ -44,9 +46,19 @@ func getAll(c *gin.Context) {
 
 	var buffer []play.Simplified
 	_, spanPlayers := tracer.Start(ctx, "players")
-	countOfPlayers := 0
+	countOfPlayers, countOfFoes := 0, 0
 	world.Lock()
-	for _, each := range (*world).ByID { buffer = append(buffer, (*each).Current.Simplify(each.Path())) ; if (*each).Current.IsNPC() == false { countOfPlayers++ }}
+	plimit, flimit := base.Round(math.Log2(float64(len((*world).ByID)))+1), base.Round(math.Sqrt(float64(len((*world).ByID))))
+	for _, each := range (*world).ByID { 
+		if (*each).Current.IsNPC() == false { 
+			countOfPlayers++ 
+			if countOfPlayers < plimit { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
+		} else { 
+			countOfFoes++ 
+			if countOfFoes < flimit { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
+		}
+		if countOfFoes + countOfPlayers >= plimit + flimit { break } 
+	} // ; if countOfPlayers < 10 {break}}
 	world.Unlock()
 	span.SetAttributes(attribute.Int("Players", countOfPlayers))
 	span.SetAttributes(attribute.Int("NPCs", len(buffer)-countOfPlayers))
@@ -54,5 +66,5 @@ func getAll(c *gin.Context) {
 
 	_, spanResponse := tracer.Start(ctx, "responding")
 	defer spanResponse.End()
-	c.IndentedJSON(200, buffer) 
+	c.JSON(200, buffer) 
 }
