@@ -8,10 +8,10 @@ import (
 func RunAPI() {
 	router := gin.Default()
 	router.GET("/", hiThere)
-	router.GET("/spawn", newFoe)
 	router.GET("/around", getAll)
 	router.GET("/login", newPlayer)
 	router.GET("/test", showGrid)
+	router.GET("/test/spawn", newFoe)
 	router.GET("/test/:id", showState)
 	metrics := gin.Default()
 	metrics.GET("/metrics", gin.WrapH(promhttp.Handler()))

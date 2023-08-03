@@ -32,7 +32,7 @@ func newPlayer(c *gin.Context) {
 	if err == nil {
 		id := player.GetID()
 		(*world).ByID[id] = state
-		c.IndentedJSON(200, "Successfully logged in")
+		c.IndentedJSON(200, struct{ ID string }{ ID: player.GetID() })
 	} else {
 		c.AbortWithError(500, errors.New("Invalid player character"))
 	}

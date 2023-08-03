@@ -32,7 +32,7 @@ func newFoe(c *gin.Context) {
 	state := foe.NewState()
 	if err == nil {
 		(*world).ByID[foe.GetID()] = state
-		c.IndentedJSON(200, "Successfully spawned")
+		c.IndentedJSON(200, struct{ ID string }{ ID: foe.GetID() })
 	} else {
 		c.AbortWithError(500, errors.New("Invalid foe character"))
 	}

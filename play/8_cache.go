@@ -6,6 +6,8 @@ import (
 	"math"
 )
 
+var timePeriod = 256
+
 type State struct {
 	Trace map[int][3]int `json:"Trace"` // time: dir + x + y
 	Effects map[int]*base.Effect `json:"Effects"`
@@ -48,7 +50,7 @@ func (c *Character) NewState() *State {
 func (st *State) UpdLife() { // used after write
 	(*st).Current.Lock()
 	st.Lock()
-	timeGape := base.EpochNS() - (*st).Later.Time["Life"] 
+	timeGape := base.Epoch() - (*st).Later.Time["Life"] 
 	(*st).Writing.Time["Life"] += timeGape
 	lifeGape := (*st.Current.Life).Rate - (*st).Later.Life.Rate
 	(*st).Writing.Life.Rate += lifeGape
@@ -59,7 +61,7 @@ func (st *State) UpdLife() { // used after write
 		if (*st).Writing.Life.Barrier[element] == 0 { delete((*st).Writing.Life.Barrier, element) }
 	}
 	// (*st).Writing.Life.Barrier = barriers
-	(*st).Later.Time["Life"] = base.EpochNS()
+	(*st).Later.Time["Life"] = base.Epoch()
 	(*st).Later.Life = *((*(*st).Current).Life)
 	st.Unlock()
 	(*st).Current.Unlock()
@@ -67,9 +69,10 @@ func (st *State) UpdLife() { // used after write
 // +write life - tbd in thicket package
 
 func (st *State) Move() {
+	now := base.Epoch()/timePeriod*timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
-	if traceLen == 0 { (*st).Trace[base.EpochNS()] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
+	if traceLen == 0 { (*st).Trace[now] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
 	buffer, latest := (*st).Trace, 0
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
 	latestStep := (*st).Trace[latest]
@@ -80,31 +83,34 @@ func (st *State) Move() {
 		base.Round(float64(latestStep[1]) - 1000*distance*math.Sin(angle)),
 		base.Round(float64(latestStep[2]) - 1000*distance*math.Cos(angle)),
 	}
-	(*st).Trace[base.EpochNS()] = newstep
+	for ts := latest ; ts < now ; ts += 256 { (*st).Trace[ts] = latestStep }
+	(*st).Trace[now] = newstep
 	st.Unlock()
-	base.Wait(math.Sqrt2*1000) // 1.4 - 0.25
+	base.Wait(256*6) // 1.536 - 0.256
 }
 
 func (st *State) Turn(rotate float64) {
 	if math.Abs(rotate) < 1/512 { return }
+	now := base.Epoch()/timePeriod*timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
-	if traceLen == 0 { (*st).Trace[base.EpochNS()] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
+	if traceLen == 0 { (*st).Trace[now] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
 	buffer, latest := (*st).Trace, 0
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
 	latestStep := (*st).Trace[latest]
 	// distance := (*st.Current.Atts).Agility // static yet
 	angle := float64(latestStep[0])/1000 * math.Pi / 180
 	newAng := base.Round(angle + rotate*1000)
-	for { if newAng > 999 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
+	for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
  	newstep := [3]int{
 		newAng,
 		latestStep[1],
 		latestStep[2],
 	}
-	(*st).Trace[base.EpochNS()] = newstep
+	for ts := latest ; ts < now ; ts += 256 { (*st).Trace[ts] = latestStep }
+	(*st).Trace[now] = newstep
 	st.Unlock()
-	base.Wait(1000/math.Phi/math.Phi) // 0.3 - 0.032
+	base.Wait(256) // 0.256 - 0.032
 }
 
 func (st *State) Collide(object *base.Stream) {
@@ -112,8 +118,8 @@ func (st *State) Collide(object *base.Stream) {
 }
 
 func (st *State) Path() [5][2]int {
-	period := 4236 * 1000000 // ns
-	now := base.EpochNS()
+	period := 4096 // ms
+	now := base.Epoch()/timePeriod*timePeriod
 	st.Lock() ; trace := (*st).Trace ; st.Unlock()
 	if len(trace) == 0 { return [5][2]int{} }
 	xs, ys, rs, counter := 0, 0, 0, 0

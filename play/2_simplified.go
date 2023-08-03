@@ -19,6 +19,11 @@ type Simplified struct {
 		XYNow [2]int `json:"XYNow"`
 		XYBefore [3][2]int `json:"XYBefore"`
 	} `json:"RXY"`
+	Look struct {
+		Move map[string][2]int `json:"Move"` // how : from
+		Cast map[string][2]int `json:"Cast"` // what (tool/fractal/): total ms, left
+		Drag map[string]string `json:"Drag"` // what : where - arm[s], shoulder[s], back, belt, neck, leg[s], head
+	} `json:"Look"`
 }
 
 func (c *Character) Simplify(path [5][2]int) Simplified {
