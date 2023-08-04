@@ -68,7 +68,7 @@ func (st *State) UpdLife() { // used after write
 }
 // +write life - tbd in thicket package
 
-func (st *State) Move() {
+func (st *State) Move(writeToCache chan map[string][][3]int) {
 	now := base.Epoch()/timePeriod*timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
@@ -83,13 +83,20 @@ func (st *State) Move() {
 		base.Round(float64(latestStep[1]) - 1000*distance*math.Sin(angle)),
 		base.Round(float64(latestStep[2]) - 1000*distance*math.Cos(angle)),
 	}
-	for ts := latest ; ts < now ; ts += 256 { (*st).Trace[ts] = latestStep }
+	id := (*st).Current.GetID()
+	toWrite := make(map[string][][3]int) // id: t, x, y
+	for ts := latest ; ts < now ; ts += 256 { 
+		(*st).Trace[ts] = latestStep 
+		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+	}
 	(*st).Trace[now] = newstep
+	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
+	writeToCache <- toWrite
 	base.Wait(256*6) // 1.536 - 0.256
 }
 
-func (st *State) Turn(rotate float64) {
+func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	if math.Abs(rotate) < 1/512 { return }
 	now := base.Epoch()/timePeriod*timePeriod
 	st.Lock()
@@ -107,14 +114,17 @@ func (st *State) Turn(rotate float64) {
 		latestStep[1],
 		latestStep[2],
 	}
-	for ts := latest ; ts < now ; ts += 256 { (*st).Trace[ts] = latestStep }
+	id := (*st).Current.GetID()
+	toWrite := make(map[string][][3]int) // id: t, x, y
+	for ts := latest ; ts < now ; ts += 256 { 
+		(*st).Trace[ts] = latestStep
+		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+	}
 	(*st).Trace[now] = newstep
+	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
+	writeToCache <- toWrite
 	base.Wait(256) // 0.256 - 0.032
-}
-
-func (st *State) Collide(object *base.Stream) {
-	// TBD
 }
 
 func (st *State) Path() [5][2]int {
@@ -169,4 +179,8 @@ func (st *State) Path() [5][2]int {
 		[2]int{ xs1/counter1, ys1/counter1 },
 		[2]int{ xs/counter, ys/counter },
 	}
+}
+
+func (st *State) Collide(object *base.Stream) {
+	// TBD
 }
