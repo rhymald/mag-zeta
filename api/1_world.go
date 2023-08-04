@@ -2,7 +2,9 @@ package api
 
 import (
 	"rhymald/mag-zeta/play"
+	"rhymald/mag-zeta/connect"
 	"rhymald/mag-zeta/base"
+	"github.com/jackc/pgx/v5"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,15 +14,9 @@ import (
 )
 
 type Location struct {
+	ID int
 	ByID map[string]*play.State
-	Grid struct {
-		X map[string]int // axis
-		Y map[string]int // axis
-		T map[string]int // time
-		Vec map[int]string // direction from 0, 0
-		Rad map[int]string // distance from 0, 0
-		Zero [2]int // 0, 0
-	}
+	Grid *pgx.Conn
 	// PosCache connection.to.table
 	sync.Mutex
 }
@@ -32,13 +28,7 @@ var (
 )
 
 func newWorld() *Location {
-	buffer := Location{ ByID: make(map[string]*play.State) }
-	buffer.Grid.Zero = [2]int{0, 0}
-	buffer.Grid.Y = make(map[string]int)
-	buffer.Grid.X = make(map[string]int)
-	buffer.Grid.T = make(map[string]int)
-	buffer.Grid.Vec = make(map[int]string)
-	buffer.Grid.Rad = make(map[int]string)
+	buffer := Location{ ByID: make(map[string]*play.State), ID: base.EpochNS(), Grid: connect.ConnectCacheDB() }
 	location := &buffer
 	go func(){ location.GridWriter(GridCache) }()
 	return location
@@ -84,6 +74,8 @@ func getAll(c *gin.Context) {
 func (loc *Location) GridWriter(writeToCache chan map[string][][3]int) {
 	for {
 		toWrite := <- writeToCache
-		fmt.Println(toWrite)
+		for id, TXYs := range toWrite { for _, txy := range TXYs {
+			fmt.Printf("  [GRID] ID: %s => X: %+4d, Y: %+4d @%d\n", id, txy[1], txy[2], txy[0])
+		}}
 	}
 } 

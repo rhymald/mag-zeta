@@ -10,6 +10,7 @@ services:
       - 9093:9093
     environment:
       - GIN_MODE=release
+      - CACHEDB_URL=postgresql://rhymald@cockroachdb:26257/grid?sslmode=disable
     deploy:
       resources:
         limits:
@@ -18,6 +19,11 @@ services:
         reservations:
           # cpus: '0.5'
           memory: 6000M
+    links:
+      - prometheus
+      - cockroachdb
+      # - otel-collector
+
 
   prometheus:
     image: prom/prometheus:latest
@@ -64,14 +70,13 @@ services:
 
   cockroachdb:
     image: cockroachdb/cockroach:latest
-    command: start-single-node --http-addr=localhost:8080
+    command: start-single-node --http-addr=0.0.0.0:8080 --insecure
     ports: 
       - 8080:8080
       - 26257:26257
     environment: 
       - COCKROACH_DATABASE=grid
       - COCKROACH_USER=rhymald
-      - COCKROACH_PASSWORD=454010
 
 volumes:
   grafana:
