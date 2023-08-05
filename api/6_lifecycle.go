@@ -152,7 +152,7 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		// fmt.Println("  Dots:", makedots)
 		(*st).Current.Lock()
 		(*(*st).Current).Life.HealDamage(hpregens)
-		(*(*st).Current).ID["Life"] = base.Epoch()
+		// (*(*st).Current).ID["Life"] = base.Epoch()
 		span.AddEvent(fmt.Sprintf("HP modificated: %+d", hpregens))
 		for ts, dot := range makedots {
 			tsNew := ts

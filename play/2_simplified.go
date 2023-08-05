@@ -39,7 +39,9 @@ func (c *Character) Simplify(path [5][2]int) Simplified {
 		buffer.Power = len((*c).Pool)
 	}
 	buffer.ID = c.GetID()
-	buffer.TS = (*c).ID
+	buffer.TS = make(map[string]int) // (*c).ID
+	buffer.TS["Born"] = (*c).TSBorn
+	buffer.TS["Atts"] = (*c).TSAtts
 	c.Unlock()
 	buffer.RXY.XYNow = path[1]
 	buffer.RXY.RNow = path[0][0]

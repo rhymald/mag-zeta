@@ -48,7 +48,6 @@ func initTable(ctx context.Context, tx pgx.Tx) error {
 	return nil
 }
 
-// INSERT INTO events (description) VALUES ('a thing'), ('another thing'), ('yet another thing');
 func WriteTrace(writer *pgx.Conn, id string, trace *map[int][3]int) error {
 	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeAllTrace(context.Background(), tx, id, *trace) })
 	max, buffer := 0, *trace
@@ -68,6 +67,26 @@ func writeAllTrace(ctx context.Context, tx pgx.Tx, id string, trace map[int][3]i
 			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
 		}
 	}
+	query = fmt.Sprintf("%s;", query)
+	log.Println(query)
+	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
+	return nil
+}
+
+func WriteChunk(writer *pgx.Conn, chunk map[string][][3]int) error {
+	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeChunk(context.Background(), tx, chunk) })
+	return err
+}
+func writeChunk(ctx context.Context, tx pgx.Tx, chunk map[string][][3]int) error {
+	query, first := "UPSERT INTO eua (id, t, x, y) VALUES", true
+	for id, char := range chunk { for _, txy := range char {
+		if first {
+			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d')", query, id, txy[0], txy[1], txy[2])
+			first = false 
+		} else {
+			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d')", query, id, txy[0], txy[1], txy[2])
+		}
+	}}
 	query = fmt.Sprintf("%s;", query)
 	log.Println(query)
 	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }

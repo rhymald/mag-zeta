@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"sync"
 	"math"
-	"fmt"
 )
 
 type Location struct {
@@ -28,9 +27,10 @@ var (
 )
 
 func newWorld() *Location {
+	base.Wait(4096)
 	buffer := Location{ ByID: make(map[string]*play.State), ID: base.EpochNS(), Writer: connect.ConnectCacheDB()[0] }
 	location := &buffer
-	go func(){ location.GridWriter(GridCache) }()
+	go func(){ location.GridWriter_ByPush(GridCache) }()
 	return location
 }
 
@@ -70,12 +70,3 @@ func getAll(c *gin.Context) {
 	defer spanResponse.End()
 	c.JSON(200, buffer) 
 }
-
-func (loc *Location) GridWriter(writeToCache chan map[string][][3]int) {
-	for {
-		toWrite := <- writeToCache
-		for id, TXYs := range toWrite { for _, txy := range TXYs {
-			fmt.Printf("  [GRID] ID: %s => X: %+4d, Y: %+4d @%d\n", id, txy[1], txy[2], txy[0])
-		}}
-	}
-} 

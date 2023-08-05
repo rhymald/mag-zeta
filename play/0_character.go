@@ -18,7 +18,9 @@ type Attributes struct {
 }
 
 type Character struct {
-	ID map[string]int `json:"ID"`
+	TSBorn int `json:"TSBorn"`
+	TSAtts int `json:"TSAtts"`
+	// ID map[string]int `json:"ID"`
 	sync.Mutex
 	// basics
 	Body *base.Stream `json:"Body"`
@@ -34,8 +36,8 @@ func LuckyBorn(time int) int { if time%10 == 0 {return 2} else if time%10 == 9 {
 func (c *Character) IsNPC() bool { return len((*c).Energy) <= 1 }
 func (c *Character) GetID() string { 
 	in_bytes := make([]byte, 8)
-	bid := (*c).ID["Born"]
-	aid := (*c).ID["Atts"]
+	bid := (*c).TSBorn
+	aid := (*c).TSAtts
   binary.LittleEndian.PutUint64(in_bytes, uint64(bid))
 	str := sha512.Sum512(in_bytes)
 	bornID := base58.Encode(str[:])
@@ -55,13 +57,13 @@ func (c *Character) CalculateAttributes() error {
 	buffer.Vitality = (*c).Body.Dot() * 10
 	buffer.Agility = (*c).Body.Mean() * 0.7
 	buffer.Resistance = make(map[string]float64)
-	mod := float64(6 - LuckyBorn((*c).ID["Born"]))
+	mod := float64(6 - LuckyBorn((*c).TSBorn))
 	for _, each := range (*c).Energy { 
 		buffer.Resistance[each.Elem()] += each.Mean()
 		buffer.Capacity += each.Len() * mod
 	}
 	(*c).Atts = &buffer
-	(*c).ID["Atts"] = base.Epoch()
+	(*c).TSAtts = base.Epoch()
 	c.Unlock()
 	return nil
 }
