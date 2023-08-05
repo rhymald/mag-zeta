@@ -85,15 +85,15 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 	}
 	id := (*st).Current.GetID()
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	for ts := latest ; ts < now ; ts += 256 { 
+	for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
 		(*st).Trace[ts] = latestStep 
-		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+		// toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 	}
 	(*st).Trace[now] = newstep
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
 	writeToCache <- toWrite
-	base.Wait(256*6) // 1.536 - 0.256
+	base.Wait(math.Phi*1000 / math.Log2(distance+1)) // 1.536 - 0.256
 }
 
 func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
@@ -105,7 +105,7 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	buffer, latest := (*st).Trace, 0
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
 	latestStep := (*st).Trace[latest]
-	// distance := (*st.Current.Atts).Agility // static yet
+	distance := (*st.Current.Atts).Agility // static yet
 	angle := float64(latestStep[0])/1000 * math.Pi / 180
 	newAng := base.Round(angle + rotate*1000)
 	for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
@@ -116,15 +116,15 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	}
 	id := (*st).Current.GetID()
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	for ts := latest ; ts < now ; ts += 256 { 
+	for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
 		(*st).Trace[ts] = latestStep
-		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+		// toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 	}
 	(*st).Trace[now] = newstep
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
 	writeToCache <- toWrite
-	base.Wait(256) // 0.256 - 0.032
+	base.Wait(1000/math.Phi/math.Phi / math.Log2(distance+1)) // 0.256 - 0.032
 }
 
 func (st *State) Path() [5][2]int {

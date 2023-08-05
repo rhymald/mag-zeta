@@ -86,6 +86,8 @@ services:
         reservations:
           # cpus: '0.5'
           memory: 2048M
+    volumes:
+      - '/mnt/ramdisk:/cockroach/cockroach-data'
 
 
 volumes:
