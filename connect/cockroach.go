@@ -49,14 +49,19 @@ func initTable(ctx context.Context, tx pgx.Tx) error {
 }
 
 // INSERT INTO events (description) VALUES ('a thing'), ('another thing'), ('yet another thing');
-func WritePosition(writer *pgx.Conn, id string, trace *map[int][3]int) error {
-	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeTrace(context.Background(), tx, id, *trace) })
+func WriteTrace(writer *pgx.Conn, id string, trace *map[int][3]int) error {
+	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeAllTrace(context.Background(), tx, id, *trace) })
+	max, buffer := 0, *trace
+	for ts, _ := range buffer { if ts > max { max = ts }}
+	latest := buffer[max]
+	newTrace := make(map[int][3]int) ; newTrace[max] = latest
+	*trace = newTrace
 	return err
 }
-func writeTrace(ctx context.Context, tx pgx.Tx, id string, trace map[int][3]int) error {
+func writeAllTrace(ctx context.Context, tx pgx.Tx, id string, trace map[int][3]int) error {
 	query, first := "UPSERT INTO eua (id, t, x, y) VALUES", true
 	for ts, rxy := range trace {
-		if first { 
+		if first {
 			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
 			first = false 
 		} else {
