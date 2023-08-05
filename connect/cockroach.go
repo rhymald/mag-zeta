@@ -6,11 +6,10 @@ import(
 	"log"
 	// "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/jackc/pgx/v5"
-	"rhymald/mag-zeta/base"
+	// "rhymald/mag-zeta/base"
 )
 
 func ConnectCacheDB() *pgx.Conn {
-	base.Wait(4236)
 	config, err := pgx.ParseConfig(os.Getenv("CACHEDB_URL"))
 	if err != nil {
 			log.Fatal(err)

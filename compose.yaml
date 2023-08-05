@@ -23,6 +23,8 @@ services:
       - prometheus
       - cockroachdb
       # - otel-collector
+    depends_on:
+      - cockroachdb
 
 
   prometheus:
