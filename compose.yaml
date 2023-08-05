@@ -15,10 +15,10 @@ services:
       resources:
         limits:
           # cpus: '0.2'
-          memory: 2048M
+          memory: 6144M
         reservations:
           # cpus: '0.5'
-          memory: 2048M
+          memory: 6144M
     links:
       - prometheus
       - cockroachdb
@@ -78,14 +78,14 @@ services:
     environment: 
       - COCKROACH_DATABASE=grid
       - COCKROACH_USER=rhymald
-    deploy:
-      resources:
-        limits:
-          # cpus: '0.2'
-          memory: 2048M
-        reservations:
-          # cpus: '0.5'
-          memory: 2048M
+    # deploy:
+    #   resources:
+    #     limits:
+    #       # cpus: '0.2'
+    #       memory: 2048M
+    #     reservations:
+    #       # cpus: '0.5'
+    #       memory: 2048M
     volumes:
       - '/mnt/ramdisk:/cockroach/cockroach-data'
 

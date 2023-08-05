@@ -60,6 +60,16 @@ Delete all images:
 sudo docker rm $(sudo docker ps -a -f status=exited -q) && sudo docker rmi $(sudo docker images -a -q)
 ```
 
+## Loadtest
+
+|When|App RAM|DB Storage|DB RAM|Results|
+|-:|:-:|:-:|:-:|:-|
+|N5U: No DB|13 GiB|-|-|71000 pl+npc (~30 sec.)|
+|N5U: No DB|6 GiB|-|-|45000 pl+npc (~30 sec.)|
+|N7S: 2 write per move|2 GiB|2 GiB|2 GiB|1400pl + 3900npc (etern.)|
+|N7S: 2 write per move|4 GiB|2 GiB|2 GiB|1737pl + 5362npc (etern.) |
+|N7S: 2 write per move|6 GiB|2 GiB|2 GiB|1903pl + 5876npc (etern.) |
+
 ## Build
 Another one, 6th trial to design P2P game server.
 
