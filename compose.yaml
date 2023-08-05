@@ -15,17 +15,16 @@ services:
       resources:
         limits:
           # cpus: '0.2'
-          memory: 6000M
+          memory: 2048M
         reservations:
           # cpus: '0.5'
-          memory: 6000M
+          memory: 2048M
     links:
       - prometheus
       - cockroachdb
       # - otel-collector
     depends_on:
       - cockroachdb
-
 
   prometheus:
     image: prom/prometheus:latest
@@ -79,6 +78,15 @@ services:
     environment: 
       - COCKROACH_DATABASE=grid
       - COCKROACH_USER=rhymald
+    deploy:
+      resources:
+        limits:
+          # cpus: '0.2'
+          memory: 2048M
+        reservations:
+          # cpus: '0.5'
+          memory: 2048M
+
 
 volumes:
   grafana:
