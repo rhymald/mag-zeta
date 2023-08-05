@@ -16,7 +16,7 @@ import (
 type Location struct {
 	ID int
 	ByID map[string]*play.State
-	Grid *pgx.Conn
+	Writer *pgx.Conn
 	// PosCache connection.to.table
 	sync.Mutex
 }
@@ -28,7 +28,7 @@ var (
 )
 
 func newWorld() *Location {
-	buffer := Location{ ByID: make(map[string]*play.State), ID: base.EpochNS(), Grid: connect.ConnectCacheDB() }
+	buffer := Location{ ByID: make(map[string]*play.State), ID: base.EpochNS(), Writer: connect.ConnectCacheDB()[0] }
 	location := &buffer
 	go func(){ location.GridWriter(GridCache) }()
 	return location

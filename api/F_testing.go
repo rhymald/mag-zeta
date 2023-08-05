@@ -5,7 +5,7 @@ import (
 )
 
 func showGrid(c *gin.Context) { 
-	c.IndentedJSON(200, (*world).Grid) 
+	c.IndentedJSON(200, *world) 
 }
 
 func showState(c *gin.Context) { 

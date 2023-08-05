@@ -10,7 +10,7 @@ services:
       - 9093:9093
     environment:
       - GIN_MODE=release
-      - CACHEDB_URL=postgresql://rhymald@cockroachdb:26257/grid?sslmode=disable
+      - CACHEDB_WRITER_URL=postgresql://rhymald@cockroachdb:26257/grid?sslmode=disable
     deploy:
       resources:
         limits:

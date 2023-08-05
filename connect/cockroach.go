@@ -10,30 +10,28 @@ import(
 	"fmt"
 )
 
-func ConnectCacheDB() *pgx.Conn {
-	config, err := pgx.ParseConfig(os.Getenv("CACHEDB_URL"))
+func ConnectCacheDB() []*pgx.Conn {
+	config, err := pgx.ParseConfig(os.Getenv("CACHEDB_WRITER_URL"))
 	if err != nil {
 			log.Fatal(err)
 	}
-	config.RuntimeParams["application_name"] = "$ docs_simplecrud_gopgx"
-	conn, err := pgx.ConnectConfig(context.Background(), config)
+	config.RuntimeParams["application_name"] = "$ mag_cached_grid"
+	writer, err := pgx.ConnectConfig(context.Background(), config)
 	if err != nil {
 			log.Fatal(err)
 	}
 	// defer conn.Close(context.Background())
-	err = crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(tx pgx.Tx) error { return initTable(context.Background(), tx) })
-	return conn
+	err = crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return initTable(context.Background(), tx) })
+	return []*pgx.Conn{ writer } 
 }
 
 func initTable(ctx context.Context, tx pgx.Tx) error {
 	// Dropping existing table if it exists
-
 	log.Println(" => Drop existing table:")
 	if _, err := tx.Exec(ctx, "DROP TABLE IF EXISTS eua;"); err != nil {
 			return err
 	}
-
-	// Create the accounts table
+	// Create the grid table
 	log.Println(" => Creating grid table: eua...")
 	query := fmt.Sprintf("CREATE TABLE %s (%s, %s, %s, %s, %s, %s, %s) WITH (%s);",
 		"eua",
@@ -46,6 +44,27 @@ func initTable(ctx context.Context, tx pgx.Tx) error {
 		"INDEX position (t, x, y)",
 		"ttl_expire_after = '5 minutes', ttl_job_cron = '*/2 * * * *'",
 	)
-	if _, err := tx.Exec(ctx, query); err != nil { log.Println(" => ERROR[Failed to create table]:", err) ; return err }
+	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
+	return nil
+}
+
+// INSERT INTO events (description) VALUES ('a thing'), ('another thing'), ('yet another thing');
+func WritePosition(writer *pgx.Conn, id string, trace *map[int][3]int) error {
+	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeTrace(context.Background(), tx, id, *trace) })
+	return err
+}
+func writeTrace(ctx context.Context, tx pgx.Tx, id string, trace map[int][3]int) error {
+	query, first := "UPSERT INTO eua (id, t, x, y) VALUES", true
+	for ts, rxy := range trace {
+		if first { 
+			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
+			first = false 
+		} else {
+			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
+		}
+	}
+	query = fmt.Sprintf("%s;", query)
+	log.Println(query)
+	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
 	return nil
 }
