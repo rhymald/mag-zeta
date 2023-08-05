@@ -48,29 +48,31 @@ Effects consumer on each char:
 
 --- 
 
-# Build
+# Scripts
 
 List all funcs and types:
 ```bash
 grep -r "^\(func\)\|^\(type\)" . | grep Dot
 ```
 
-## mag-zeta
-Another one, 6th trial to design P2P game server.
-
 Delete all images: 
 ```bash
 sudo docker rm $(sudo docker ps -a -f status=exited -q) && sudo docker rmi $(sudo docker images -a -q)
 ```
 
-Build container: 
+## Build
+Another one, 6th trial to design P2P game server.
+
+Container: 
+
 ```bash
 docker buildx build .
 docker tag 33415c rhymald/mag:latest
 docker push rhymald/mag:latest
 ```
 
-Run: 
+## Run
+
 ```bash
 sudo docker compose up --build
 ```

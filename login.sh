@@ -3,7 +3,7 @@
 counter=0
 
 createObjects () {
-  while sleep 0; do 
+  while sleep 0.04; do 
     counter=$(( $counter+1 )) ;
     echo "Here: $counter" ;
     curl localhost:4917/login > /dev/null 2>&1 ; 
