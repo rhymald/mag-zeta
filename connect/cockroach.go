@@ -42,7 +42,7 @@ func initTable(ctx context.Context, tx pgx.Tx) error {
 		"x INT",
 		"y INT",
 		"INDEX position (t, x, y)",
-		"ttl_expire_after = '99 seconds', ttl_job_cron = '*/1 * * * *'",
+		"ttl_expire_after = '61 seconds', ttl_job_cron = '*/1 * * * *'",
 	)
 	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
 	return nil
