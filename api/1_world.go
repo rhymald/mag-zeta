@@ -44,21 +44,18 @@ func getAll(c *gin.Context) {
 	takenID := c.Param("myplayerid")
 	myPlayer := &play.State{} 
 	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] } else { myPlayer = nil }
-	plimit, flimit := base.Round(math.Log2(float64( objLimit ))+1), base.Round(math.Sqrt(float64( objLimit )))
-	first := [2]int{}// (*world).ByID[id].Path()[1]
-	buffer = append(buffer, (*myPlayer).Current.Simplify(myPlayer.Path()))
+	plimit, flimit := base.Round(math.Log2( float64(objLimit) )) + 4, 16 + base.Round(math.Sqrt( float64(objLimit) ))
+	first := [5][2]int{} ; if myPlayer != nil { 
+		first = myPlayer.Path() 
+		buffer = append(buffer, (*myPlayer).Current.Simplify(first, first[1]))
+	}
 	for id, each := range (*world).ByID { 
-		distance := 0.0
-		if countOfFoes + countOfPlayers == 0 {
-			first = myPlayer.Path()[1]
-		} else {
-			distance = math.Sqrt( math.Pow(float64(each.Path()[1][0] - first[0]), 2) + math.Pow(float64(each.Path()[1][1] - first[1]), 2) )
-		}
+		distance := math.Sqrt( math.Pow(float64(each.Path()[1][0] - first[1][0]), 2) + math.Pow(float64(each.Path()[1][1] - first[1][1]), 2) )
 		if (*each).Current.IsNPC() == false { 
-			if countOfPlayers < plimit && distance < 500 && id != takenID { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
+			if countOfPlayers < plimit && distance < math.Sqrt2*1000 && id != takenID { buffer = append(buffer, (*each).Current.Simplify(each.Path(), first[1])) }
 			countOfPlayers++ 
 		} else { 
-			if countOfFoes < flimit && distance < 500 { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
+			if countOfFoes < flimit && distance < math.Sqrt2*1000 { buffer = append(buffer, (*each).Current.Simplify(each.Path(), first[1])) }
 			countOfFoes++ 
 		}
 		if countOfFoes + countOfPlayers >= plimit + flimit { break } 

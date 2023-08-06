@@ -26,7 +26,7 @@ type Simplified struct {
 	} `json:"Look"`
 }
 
-func (c *Character) Simplify(path [5][2]int) Simplified {
+func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	var buffer Simplified
 	c.Lock()
 	npc := c.IsNPC()
@@ -43,10 +43,10 @@ func (c *Character) Simplify(path [5][2]int) Simplified {
 	buffer.TS["Born"] = (*c).TSBorn
 	buffer.TS["Atts"] = (*c).TSAtts
 	c.Unlock()
-	buffer.RXY.XYNow = path[1]
+	buffer.RXY.XYNow = [2]int{ camera[0]-path[1][0], camera[1]-path[1][1] }
 	buffer.RXY.RNow = path[0][0]
 	buffer.RXY.Rotate = path[0][1]
-	for i, each := range path[2:5] { buffer.RXY.XYBefore[i] = each }
+	for i, each := range path[2:5] { buffer.RXY.XYBefore[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
 	// immitation:
 	barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
 	buffer.Wound = penalty
