@@ -43,9 +43,10 @@ func getAll(c *gin.Context) {
 	world.Lock() ; objLimit := len((*world).ByID)
 	takenID := c.Param("myplayerid")
 	myPlayer := &play.State{} 
-	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] }
+	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] } else { myPlayer = nil }
 	plimit, flimit := base.Round(math.Log2(float64( objLimit ))+1), base.Round(math.Sqrt(float64( objLimit )))
 	first := [2]int{}// (*world).ByID[id].Path()[1]
+	buffer = append(buffer, (*myPlayer).Current.Simplify(myPlayer.Path()))
 	for id, each := range (*world).ByID { 
 		distance := 0.0
 		if countOfFoes + countOfPlayers == 0 {
@@ -69,5 +70,5 @@ func getAll(c *gin.Context) {
 
 	_, spanResponse := tracer.Start(ctx, "responding")
 	defer spanResponse.End()
-	c.JSON(200, buffer) 
+	c.IndentedJSON(200, buffer) 
 }

@@ -9,7 +9,7 @@ import (
 	// "rhymald/mag-zeta/base"
 	// "go.opentelemetry.io/otel/trace"
 	// "fmt"
-	"math"
+	// "math"
 	// "rhymald/mag-zeta/connect"
 	"fmt"
 )
@@ -43,7 +43,10 @@ func newFoe(c *gin.Context) {
 
 	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
 	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
-	go func(){ for {state.Move(GridCache)} ; state.Turn(1/math.Phi/math.Phi, GridCache) }()
+	go func(){ for {
+		state.Move(GridCache)
+		state.Turn(0.5, GridCache)
+	}}()
 	// go func(){ for {state.Turn(1/math.Phi/math.Phi * float64(base.Epoch()%3-1), GridCache)} }()
 	// go func(){ base.Wait(30000) ; state.Lock() ; connect.WriteTrace((*world).Writer, foe.GetID(), &(*state).Trace) ; state.Unlock() }()
 }
