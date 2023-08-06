@@ -78,6 +78,10 @@ sudo docker rm $(sudo docker ps -a -f status=exited -q) && sudo docker rmi $(sud
 |N7S|`6 GiB`|1.27 / 2 GiB|_unlim._|1494 pl + 4542 npc (etern.)|
 |__Odd + Even traces, with traces cleanup__|
 |N7S|`6 GiB`|1.35 / 2 GiB|_unlim._|1774 pl + 5373 npc (etern.)|
+|__Step: 200 to 250, Gape: 60s to 30s__|
+|N7S|`6 GiB`|1.2 / 2 GiB|_unlim._|1841 pl + 5596 npc (etern.)|
+|__Step: 250 to 400, Gape: 30s to 16s__|
+|N7S|`6 GiB`|1.2 / 2 GiB|_unlim._|1842 pl + 5630 npc (etern.)|
 
 ## Build
 Another one, 6th trial to design P2P game server.

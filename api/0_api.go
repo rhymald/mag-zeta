@@ -9,6 +9,7 @@ func RunAPI() {
 	router := gin.Default()
 	router.GET("/", hiThere)
 	router.GET("/around", getAll)
+	router.GET("/around/:myplayerid", getAll)
 	router.GET("/login", newPlayer)
 	router.GET("/test", showGrid)
 	router.GET("/test/spawn", newFoe)

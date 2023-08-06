@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	tAxisStep = 200 //ms for grid, keep it <500
-	tRange = 60000 //ms per bucket, must be >= x2 Retro
+	tAxisStep = 400 //ms for grid, keep it <500
+	tRange = 16000 //ms per bucket, must be >= x2 Retro
 	tRetro = 4096 //ms let it be %4
 )
 
@@ -179,6 +179,7 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	base.Wait(1000/math.Phi/math.Phi / math.Log2(distance+1)) // 0.256 - 0.032
 }
 
+// Need to fix! It does not work for /around/...
 func (st *State) Path() [5][2]int {
 	period := tRetro // ms
 	epoch := base.Epoch()

@@ -37,23 +37,24 @@ func newWorld() *Location {
 func getAll(c *gin.Context) { 
 	ctx, span := tracer.Start((*c).Request.Context(), "pull-all-objects")
 	defer span.End()
-	// id := c.Param("id")
-
 	var buffer []play.Simplified
 	_, spanPlayers := tracer.Start(ctx, "players")
 	countOfPlayers, countOfFoes := 0, 0
 	world.Lock() ; objLimit := len((*world).ByID)
+	takenID := c.Param("myplayerid")
+	myPlayer := &play.State{} 
+	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] }
 	plimit, flimit := base.Round(math.Log2(float64( objLimit ))+1), base.Round(math.Sqrt(float64( objLimit )))
 	first := [2]int{}// (*world).ByID[id].Path()[1]
-	for _, each := range (*world).ByID { 
+	for id, each := range (*world).ByID { 
 		distance := 0.0
 		if countOfFoes + countOfPlayers == 0 {
-			first = each.Path()[1]
+			first = myPlayer.Path()[1]
 		} else {
 			distance = math.Sqrt( math.Pow(float64(each.Path()[1][0] - first[0]), 2) + math.Pow(float64(each.Path()[1][1] - first[1]), 2) )
 		}
 		if (*each).Current.IsNPC() == false { 
-			if countOfPlayers < plimit && distance < 500 { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
+			if countOfPlayers < plimit && distance < 500 && id != takenID { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
 			countOfPlayers++ 
 		} else { 
 			if countOfFoes < flimit && distance < 500 { buffer = append(buffer, (*each).Current.Simplify(each.Path())) }
