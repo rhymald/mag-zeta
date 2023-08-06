@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	tAxisStep = 200 // for grid, keep it <500
-	tRange = 60000 // per bucket, must be >= x2 Retro
-	tRetro = 4096 // let it be %4
+	tAxisStep = 200 //ms for grid, keep it <500
+	tRange = 60000 //ms per bucket, must be >= x2 Retro
+	tRetro = 4096 //ms let it be %4
 )
 
 type State struct {
@@ -78,7 +78,7 @@ func (st *State) UpdLife() { // used after write
 
 func (st *State) Move(writeToCache chan map[string][][3]int) {
 	epoch := base.Epoch()
-	now, even := (epoch%60000)/tAxisStep, (epoch/60000)%2 == 0
+	now, even := (epoch%tRange)/tAxisStep, (epoch/tRange)%2 == 0
 	st.Lock()
 	traceLen := len((*st).Trace.Odd)+len((*st).Trace.Even)
 	if traceLen == 0 { 
@@ -88,11 +88,11 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 			(*st).Trace.Odd[now]  = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return 
 		}
 	}
-	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -60000*2/tAxisStep-1, map[int][3]int{}
+	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -tRange*2/tAxisStep-1, map[int][3]int{}
 	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
-	for ts, each := range later { buffer[ts-60000/tAxisStep] = each }
+	for ts, each := range later { buffer[ts-tRange/tAxisStep] = each }
 	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
-		buffer[ts-60000/tAxisStep] = each 
+		buffer[ts-tRange/tAxisStep] = each 
 		if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
 	}}
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
@@ -108,17 +108,17 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 	toWrite := make(map[string][][3]int) // id: t, x, y
 	if even {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+60000/tAxisStep] = latestStep }
+			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+tRange/tAxisStep] = latestStep }
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
-		if now > 0 { (*st).Trace.Even[now] = latestStep } else { (*st).Trace.Odd[now+60000/tAxisStep] = latestStep }
+		if now > 0 { (*st).Trace.Even[now] = latestStep } else { (*st).Trace.Odd[now+tRange/tAxisStep] = latestStep }
 		// (*st).Trace[now] = newstep
 	} else {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+60000/tAxisStep] = latestStep }
+			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+tRange/tAxisStep] = latestStep }
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
-		if now > 0 { (*st).Trace.Odd[now] = latestStep } else { (*st).Trace.Even[now+60000/tAxisStep] = latestStep }
+		if now > 0 { (*st).Trace.Odd[now] = latestStep } else { (*st).Trace.Even[now+tRange/tAxisStep] = latestStep }
 	}
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
@@ -129,7 +129,7 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	if math.Abs(rotate) < 1/512 { return }
 	epoch := base.Epoch()
-	now, even := (epoch%60000)/tAxisStep, (epoch/60000)%2 == 0
+	now, even := (epoch%tRange)/tAxisStep, (epoch/tRange)%2 == 0
 	st.Lock()
 	traceLen := len((*st).Trace.Odd)+len((*st).Trace.Even)
 	if traceLen == 0 { 
@@ -139,11 +139,11 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 			(*st).Trace.Odd[now]  = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return 
 		}
 	}
-	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -60000*2/tAxisStep-1, map[int][3]int{}
+	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -tRange*2/tAxisStep-1, map[int][3]int{}
 	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
-	for ts, each := range later { buffer[ts-60000/tAxisStep] = each }
+	for ts, each := range later { buffer[ts-tRange/tAxisStep] = each }
 	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
-		buffer[ts-60000/tAxisStep] = each 
+		buffer[ts-tRange/tAxisStep] = each 
 		if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
 	}}
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
@@ -161,17 +161,17 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	toWrite := make(map[string][][3]int) // id: t, x, y
 	if even {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+60000/tAxisStep] = latestStep }
+			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+tRange/tAxisStep] = latestStep }
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
-		if now > 0 { (*st).Trace.Even[now] = latestStep } else { (*st).Trace.Odd[now+60000/tAxisStep] = latestStep }
+		if now > 0 { (*st).Trace.Even[now] = latestStep } else { (*st).Trace.Odd[now+tRange/tAxisStep] = latestStep }
 		// (*st).Trace[now] = newstep
 	} else {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+60000/tAxisStep] = latestStep }
+			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+tRange/tAxisStep] = latestStep }
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
-		if now > 0 { (*st).Trace.Odd[now] = latestStep } else { (*st).Trace.Even[now+60000/tAxisStep] = latestStep }
+		if now > 0 { (*st).Trace.Odd[now] = latestStep } else { (*st).Trace.Even[now+tRange/tAxisStep] = latestStep }
 	}
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
@@ -180,17 +180,17 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 }
 
 func (st *State) Path() [5][2]int {
-	period := 4096 // ms
+	period := tRetro // ms
 	epoch := base.Epoch()
-	now, even := (epoch%60000)/tAxisStep, (epoch/60000)%2 == 0
+	now, even := (epoch%tRange)/tAxisStep, (epoch/tRange)%2 == 0
 	st.Lock()
 	// trace := (*st).Trace
 	trace, later, buffer := (*st).Trace.Odd, (*st).Trace.Even, map[int][3]int{}
 	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
 	if len(trace)+len(later) == 0 { st.Unlock() ; return [5][2]int{} }
-	for ts, each := range later { buffer[ts-60000/tAxisStep] = each }
+	for ts, each := range later { buffer[ts-tRange/tAxisStep] = each }
 	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
-		buffer[ts-60000/tAxisStep] = each 
+		buffer[ts-tRange/tAxisStep] = each 
 		if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
 	}}
 	// for ts, _ := range trace { if ts > latest { latest = ts } }
@@ -199,7 +199,7 @@ func (st *State) Path() [5][2]int {
 	xs, ys, rs, counter := 0, 0, 0, 0
 	xs1, ys1, counter1 := 0, 0, 0
 	xs2, ys2, counter2 := 0, 0, 0
-	max := -60000*2/tAxisStep - 1
+	max := -tRange*2/tAxisStep - 1
 	for ts, rXY := range buffer {
 		if ts > max { max = ts }
 		if now - ts < period { counter++ ; xs += rXY[1] ; ys += rXY[2] }
