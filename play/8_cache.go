@@ -69,7 +69,7 @@ func (st *State) UpdLife() { // used after write
 // +write life - tbd in thicket package
 
 func (st *State) Move(writeToCache chan map[string][][3]int) {
-	now := base.Epoch()/timePeriod
+	now := base.MSecs()/timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
 	if traceLen == 0 { (*st).Trace[now] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
@@ -98,7 +98,7 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 
 func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	if math.Abs(rotate) < 1/512 { return }
-	now := base.Epoch()/timePeriod
+	now := base.MSecs()/timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
 	if traceLen == 0 { (*st).Trace[now] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
@@ -106,8 +106,8 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
 	latestStep := (*st).Trace[latest]
 	distance := (*st.Current.Atts).Agility // static yet
-	angle := float64(latestStep[0])/1000 * math.Pi / 180
-	newAng := base.Round(angle + rotate*1000)
+	angle := float64(latestStep[0])/1000 // * math.Pi / 180
+	newAng := base.Round(angle + rotate)*1000 // * math.Pi / 180
 	for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
  	newstep := [3]int{
 		newAng,
@@ -129,18 +129,19 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 
 func (st *State) Path() [5][2]int {
 	period := 4096 // ms
-	now := base.Epoch()/timePeriod
+	now := base.MSecs()/timePeriod
 	st.Lock() ; trace := (*st).Trace ; st.Unlock()
 	if len(trace) == 0 { return [5][2]int{} }
 	xs, ys, rs, counter := 0, 0, 0, 0
 	xs1, ys1, counter1 := 0, 0, 0
 	xs2, ys2, counter2 := 0, 0, 0
-	max := 0
+	max := -60000/timePeriod - 1
 	for ts, rXY := range trace {
+		if ts > now { ts += -60000/timePeriod }
+		if ts > max { max = ts }
 		if now - ts < period { counter++ ; xs += rXY[1] ; ys += rXY[2] }
 		if now - ts < period / 4 { xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0] }
 		if now - ts < period / 2 { xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ }
-		if ts > max { max = ts }
 	}
 	latest := trace[max]
 	rotate := latest[0] - (rs + latest[0]) / (counter2 + 1)
