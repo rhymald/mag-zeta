@@ -11,8 +11,14 @@ import (
 )
 
 type Attributes struct { 
-	Vitality float64 `json:"Vitality"`
+	// Body:
+	// + Swiftness
 	Agility float64 `json:"Agility"`
+	// + Velocity
+	// + Toughness
+	Vitality float64 `json:"Vitality"`
+	// + Endurance
+	// Streams:	
 	Capacity float64 `json:"Capacity"`
 	Resistance map[string]float64 `json:"Resistance"`
 }

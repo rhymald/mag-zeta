@@ -62,14 +62,20 @@ sudo docker rm $(sudo docker ps -a -f status=exited -q) && sudo docker rmi $(sud
 
 ## Loadtest
 
+- __Global Change__
+- `Fail point`
+
 |When|App RAM|DB Storage|DB RAM|Results|
-|-:|:-:|:-:|:-:|:-|
-|N5U: No DB|13 GiB|-|-|71000 pl + npc (~30 sec.)|
-|N5U: No DB|6 GiB|-|-|45000 pl + npc (~30 sec.)|
-|N7S: 2 write per move|2 GiB|2 GiB|2 GiB|1400 pl + 3900 npc (etern.)|
-|N7S: 2 write per move|4 GiB|2 GiB|2 GiB|1737 pl + 5362 npc (etern.)|
-|N7S: 2 write per move|6 GiB|2 GiB|2 GiB|1903 pl + 5876 npc (etern.)|
-|N7S: trace write per move|6 GiB|2 GiB|2 GiB|1903 pl + 5876 npc (etern.)|
+|:-|:-:|:-:|:-:|-:|
+|__No DB__||||__Traces not cleaned up__|
+|N5U|`13 GiB`|_none_|_none_|71000 pl + npc (~30 sec.)|
+|N5U|`6 GiB`|_none_|_none_|45000 pl + npc (~30 sec.)|
+|__2 writes per move__||__In memory__|
+|N7S|`2 GiB`|0.04 / 2 GiB|2 GiB|1400 pl + 3900 npc (etern.)|
+|N7S|`4 GiB`|0.06 / 2 GiB|2 GiB|1737 pl + 5362 npc (etern.)|
+|N7S|`6 GiB`|0.1 / 2 GiB|_unlim._|1903 pl + 5876 npc (etern.)|
+|__Trace write per move__|
+|N7S|`6 GiB`|1.27 / 2 GiB|_unlim._|1494 pl + 4542 npc (etern.)|
 
 ## Build
 Another one, 6th trial to design P2P game server.

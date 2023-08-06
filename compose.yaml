@@ -88,6 +88,7 @@ services:
     #       memory: 2048M
     volumes:
       - '/mnt/ramdisk:/cockroach/cockroach-data'
+        # ^ sudo mount -t tmpfs -o rw,size=2G tmpfs /mnt/ramdisk
 
 
 volumes:

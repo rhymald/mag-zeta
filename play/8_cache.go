@@ -69,7 +69,7 @@ func (st *State) UpdLife() { // used after write
 // +write life - tbd in thicket package
 
 func (st *State) Move(writeToCache chan map[string][][3]int) {
-	now := base.Epoch()/timePeriod*timePeriod
+	now := base.Epoch()/timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
 	if traceLen == 0 { (*st).Trace[now] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
@@ -85,7 +85,7 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 	}
 	id := (*st).Current.GetID()
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
+	for ts := latest ; ts < now ; ts++ { 
 		(*st).Trace[ts] = latestStep 
 		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 	}
@@ -98,7 +98,7 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 
 func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	if math.Abs(rotate) < 1/512 { return }
-	now := base.Epoch()/timePeriod*timePeriod
+	now := base.Epoch()/timePeriod
 	st.Lock()
 	traceLen := len((*st).Trace)
 	if traceLen == 0 { (*st).Trace[now] = [3]int{ base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ), base.ChancedRound( 2000*base.Rand()-1000 ) } ; st.Unlock() ; return }
@@ -116,7 +116,7 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	}
 	id := (*st).Current.GetID()
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
+	for ts := latest ; ts < now ; ts++ { 
 		(*st).Trace[ts] = latestStep
 		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 	}
@@ -129,7 +129,7 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 
 func (st *State) Path() [5][2]int {
 	period := 4096 // ms
-	now := base.Epoch()/timePeriod*timePeriod
+	now := base.Epoch()/timePeriod
 	st.Lock() ; trace := (*st).Trace ; st.Unlock()
 	if len(trace) == 0 { return [5][2]int{} }
 	xs, ys, rs, counter := 0, 0, 0, 0

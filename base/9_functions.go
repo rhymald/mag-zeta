@@ -9,11 +9,12 @@ import (
 )
 
 const MinEntropy = 0.0132437
-const StartEpoch = int(time.Now().UnixNano())
+var StartEpoch = int(time.Now().UnixNano())
 
 
 // TIME
-func Epoch() int { return (EpochNS()-StartEpoch)/1000000 }
+func MSecs() int { return Epoch()%60000 }
+func Epoch() int { return EpochNS()/1000000 }
 func EpochNS() int { return int(time.Now().UnixNano())-StartEpoch }
 func Wait(ms float64) { time.Sleep( time.Millisecond * time.Duration( ms )) }
 
