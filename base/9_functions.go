@@ -9,6 +9,7 @@ import (
 )
 
 const MinEntropy = 0.0132437
+const StartEpoch = Epoch()
 
 
 // TIME

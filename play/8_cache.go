@@ -85,10 +85,10 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 	}
 	id := (*st).Current.GetID()
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	// for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
-	// 	(*st).Trace[ts] = latestStep 
-	// }
-	toWrite[id] = append(toWrite[id], [3]int{now-timePeriod, latestStep[1], latestStep[2]})
+	for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
+		(*st).Trace[ts] = latestStep 
+		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+	}
 	(*st).Trace[now] = newstep
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
@@ -116,10 +116,10 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	}
 	id := (*st).Current.GetID()
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	// for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
-	// 	(*st).Trace[ts] = latestStep
-	// }
-	toWrite[id] = append(toWrite[id], [3]int{now-timePeriod, latestStep[1], latestStep[2]})
+	for ts := latest+timePeriod ; ts < now ; ts += timePeriod { 
+		(*st).Trace[ts] = latestStep
+		toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+	}
 	(*st).Trace[now] = newstep
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	st.Unlock()
