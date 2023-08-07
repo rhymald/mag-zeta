@@ -14,14 +14,14 @@ type Simplified struct {
 	// Barrier int `json:"Barrier"`
 	// Wound int `json:"Wound"`
 	// elem
-	Attune string `json:"Attune"`
-	Power int `json:"Power"`
+	E string `json:"E"`
+	PWR int `json:"PWR"`
 	// xyz
 	RXY struct {
 		RNow int `json:"RNow"`
-		Rotate int `json:"Rotate"`
+		RAdd int `json:"RAdd"`
 		XYNow [2]int `json:"XYNow"`
-		XYBefore [3][2]int `json:"XYBefore"`
+		XYOld [3][2]int `json:"XYOld"`
 	} `json:"RXY"`
 	Look struct {
 		Move map[string][2]int `json:"Move"` // how : from
@@ -37,22 +37,31 @@ func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	buffer.HP = (*c).Life.Rate
 	if npc { 
 		// buffer.ID = "Dummy"
-		buffer.Power = -base.ChancedRound((*(*c).Atts).Capacity) 
+		buffer.PWR = -base.ChancedRound((*(*c).Atts).Capacity) 
 	} else { 
 		// buffer.ID = "Player"
-		buffer.Power = len((*c).Pool)
+		buffer.PWR = len((*c).Pool)
 	}
 	buffer.ID = c.GetID()
 	buffer.TS = make(map[string]int) // (*c).ID
 	buffer.TS["Born"] = (*c).TSBorn
 	buffer.TS["Atts"] = (*c).TSAtts
 	body, elem := (*c).Body, (*c).Energy[0]
+	eb, ee := body.Elem(), elem.Elem()
+	if eb == base.ElemList[0] { eb = "" }
+	if ee == base.PhysList[0] { if eb == "" { ee = "🧿" } else { ee = ""}}
 	c.Unlock()
 	buffer.RXY.XYNow = [2]int{ camera[0]-path[1][0], camera[1]-path[1][1] }
 	buffer.RXY.RNow = path[0][0]
-	buffer.RXY.Rotate = path[0][1]
-	for i, each := range path[2:5] { buffer.RXY.XYBefore[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
-	if npc { buffer.Attune = fmt.Sprintf("%s%s", body.Elem(), elem.Elem())}
+	buffer.RXY.RAdd = path[0][1]
+	for i, each := range path[2:5] { buffer.RXY.XYOld[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
+	if npc { 
+		buffer.E = fmt.Sprintf("%s%s", eb, ee)
+		buffer.Name = "Training dummy"
+		} else { 
+			buffer.E = fmt.Sprintf("%s", eb) 
+			buffer.Name = "Some player"
+	}
 	// immitation:
 	// barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
 	// buffer.Wound = penalty
