@@ -45,17 +45,17 @@ func getAll(c *gin.Context) {
 	myPlayer := &play.State{} 
 	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] } else { myPlayer = nil }
 	plimit, flimit := base.Round(math.Log2( float64(objLimit) )) + 4, 16 + base.Round(math.Sqrt( float64(objLimit) ))
-	first := [5][2]int{} ; if myPlayer != nil { 
-		first = myPlayer.Path() 
+	radius := 1800*4 ; first := [5][2]int{} ; first[1][1] += radius/2 ; if myPlayer != nil { 
+		first = myPlayer.Path() ; first[1][1] += radius/2
 		buffer = append(buffer, (*myPlayer).Current.Simplify(first, first[1]))
 	}
 	for id, each := range (*world).ByID { 
 		distance := math.Sqrt( math.Pow(float64(each.Path()[1][0] - first[1][0]), 2) + math.Pow(float64(each.Path()[1][1] - first[1][1]), 2) )
 		if (*each).Current.IsNPC() == false { 
-			if countOfPlayers < plimit && distance < math.Sqrt2*1000 && id != takenID { buffer = append(buffer, (*each).Current.Simplify(each.Path(), first[1])) }
+			if countOfPlayers < plimit && distance < float64(radius) && id != takenID { buffer = append(buffer, (*each).Current.Simplify(each.Path(), first[1])) }
 			countOfPlayers++ 
 		} else { 
-			if countOfFoes < flimit && distance < math.Sqrt2*1000 { buffer = append(buffer, (*each).Current.Simplify(each.Path(), first[1])) }
+			if countOfFoes < flimit && distance < float64(radius) { buffer = append(buffer, (*each).Current.Simplify(each.Path(), first[1])) }
 			countOfFoes++ 
 		}
 		if countOfFoes + countOfPlayers >= plimit + flimit { break } 
@@ -67,5 +67,5 @@ func getAll(c *gin.Context) {
 
 	_, spanResponse := tracer.Start(ctx, "responding")
 	defer spanResponse.End()
-	c.IndentedJSON(200, buffer) 
+	c.JSON(200, buffer) 
 }

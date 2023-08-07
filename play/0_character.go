@@ -24,18 +24,15 @@ type Attributes struct {
 }
 
 type Character struct {
+	Name string `json:"TSBorn"` 
 	TSBorn int `json:"TSBorn"`
 	TSAtts int `json:"TSAtts"`
-	// ID map[string]int `json:"ID"`
 	sync.Mutex
-	// basics
-	Body *base.Stream `json:"Body"`
-	Energy []*base.Stream `json:"Energy"`
-	// consumables
-	Life *base.Life `json:"Life"` 
-	Pool map[int]*base.Dot `json:"Pool"`
-	// recalculateable stats
 	Atts *Attributes `json:"Atts"`
+	Body *base.Stream `json:"Body"`
+	Life *base.Life `json:"Life"` 
+	Energy []*base.Stream `json:"Energy"`
+	Pool map[int]*base.Dot `json:"Pool"`
 }
 
 func LuckyBorn(time int) int { if time%10 == 0 {return 2} else if time%10 == 9 {return 5} else if time%10 < 5 {return 3} else {return 4} ; return 0}

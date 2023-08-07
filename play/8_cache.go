@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	tAxisStep = 250 //ms for grid, keep it <500
-	tRange = 16000 //ms per bucket, must be >= x2 Retro
-	tRetro = 4000 //ms let it be %(4*Step)
+	tAxisStep = 256 //ms for grid, keep it <500
+	tRange = 16*1024 //ms per bucket, must be >= x2 Retro
+	tRetro = 4096 //ms let it be %(4*Step)
 )
 
 type State struct {
@@ -114,7 +114,7 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 	distance := (*st.Current.Atts).Agility // static yet
 	id := (*st).Current.GetID()
 	(*st).Current.Unlock()
-	angle := float64(latestStep[0])/1000 * math.Pi / 180
+	angle := float64(latestStep[0])/1000 * 180 //math.Pi / 180
 	newstep := [3]int{
 		latestStep[0],
 		base.Round(float64(latestStep[1]) - 1000*distance*math.Sin(angle)),
@@ -138,7 +138,7 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	(*st).Trace.Unlock()
 	writeToCache <- toWrite
-	base.Wait(float64(tAxisStep)*4 / math.Log2(distance+1)) // 1.536 - 0.256
+	base.Wait(float64(tAxisStep)*4)// / math.Log2(distance+1)) // 1.536 - 0.256
 }
 
 func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
@@ -176,7 +176,7 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
 	latestStep := buffer[latest]
 	(*st).Current.Lock()
-	distance := (*st.Current.Atts).Agility // to be replaced 
+	// distance := (*st.Current.Atts).Agility // to be replaced 
 	id := (*st).Current.GetID()
 	(*st).Current.Unlock()
 	angle := float64(latestStep[0])/1000 // * math.Pi / 180
@@ -205,10 +205,9 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	(*st).Trace.Unlock()
 	writeToCache <- toWrite
-	base.Wait(float64(tAxisStep) / math.Log2(distance+1)) // 0.256 - 0.032
+	base.Wait(float64(tAxisStep))// / math.Log2(distance+1)) // 0.256 - 0.032
 }
 
-// Need to fix! It does not work for /around/...
 func (st *State) Path() [5][2]int {
 	period := tRetro/tAxisStep // ms
 	epoch := base.Epoch()
@@ -226,20 +225,25 @@ func (st *State) Path() [5][2]int {
 	// for ts, _ := range trace { if ts > latest { latest = ts } }
 	// latestStep := trace[latest]
 	(*st).Trace.Unlock()
-	xs, ys, rs, counter := 0, 0, 0, 0
+	counter, rs := 0, 0
 	xs1, ys1, counter1 := 0, 0, 0
 	xs2, ys2, counter2 := 0, 0, 0
+	xs3, ys3, counter3 := 0, 0, 0
 	max := -tRange*2/tAxisStep - 1
 	for ts, rXY := range buffer {
 		if ts > max { max = ts }
-		if now - ts < period { counter++ ; xs += rXY[1] ; ys += rXY[2] }
-		if now - ts < period / 4 { xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0] }
-		if now - ts < period / 2 { xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ }
+		if (now - ts)*3 / period == 0 { 
+			xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ ; rs += rXY[0]; counter++
+		} else if (now - ts)*3 / period == 1 { 
+			xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0]; counter++
+		} else if (now - ts)*3 / period == 2 { 
+			xs3 += rXY[1] ; ys3 += rXY[2] ; counter3++ ; rs += rXY[0]; counter++
+		}
 	}
 	latest := buffer[max]
-	rotate := latest[0] - (rs + latest[0]) / (counter2 + 1)
+	rotate := latest[0] - (rs + latest[0]) / (counter + 1)
 	for { if rotate > 999 { rotate += -2000 } else if rotate < -1000 { rotate += 2000 } else { break }}
-	if counter <= 1 { 
+	if counter1 == 0 { 
 		return [5][2]int{
 			[2]int{ latest[0], 0 },
 			[2]int{ latest[1], latest[2] },
@@ -248,30 +252,30 @@ func (st *State) Path() [5][2]int {
 			[2]int{ latest[1], latest[2] },
 		}
 	}
-	if counter1 == 0 {
-		return [5][2]int{
-			[2]int{ latest[0], rotate },
-			[2]int{ latest[1], latest[2] },
-			[2]int{ xs/counter, ys/counter },
-			[2]int{ xs/counter, ys/counter },
-			[2]int{ xs/counter, ys/counter },
-		}	
-	}
 	if counter2 == 0 {
 		return [5][2]int{
 			[2]int{ latest[0], rotate },
 			[2]int{ latest[1], latest[2] },
 			[2]int{ xs1/counter1, ys1/counter1 },
 			[2]int{ xs1/counter1, ys1/counter1 },
-			[2]int{ xs/counter, ys/counter },
+			[2]int{ xs1/counter1, ys1/counter1 },
 		}	
+	}
+	if counter3 == 0 {
+		return [5][2]int{
+			[2]int{ latest[0], rotate },
+			[2]int{ latest[1], latest[2] },
+			[2]int{ xs1/counter1, ys1/counter1 },
+			[2]int{ xs2/counter2, ys2/counter2 },
+			[2]int{ xs3/counter2, ys3/counter2 },
+			}	
 	}
 	return [5][2]int{
 		[2]int{ latest[0], rotate },
 		[2]int{ latest[1], latest[2] },
-		[2]int{ xs2/counter2, ys2/counter2 },
 		[2]int{ xs1/counter1, ys1/counter1 },
-		[2]int{ xs/counter, ys/counter },
+		[2]int{ xs2/counter2, ys2/counter2 },
+		[2]int{ xs3/counter3, ys3/counter3 },
 	}
 }
 

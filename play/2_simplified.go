@@ -1,14 +1,18 @@
 package play 
 
-import "rhymald/mag-zeta/base"
+import (
+	"rhymald/mag-zeta/base"
+	"fmt"
+) 
 
 type Simplified struct {
+	Name string `json:"Name"`
 	ID string `json:"ID"`
 	TS map[string]int `json:"TS"` 
 	// health
 	HP int `json:"HP"`
-	Barrier int `json:"Barrier"`
-	Wound int `json:"Wound"`
+	// Barrier int `json:"Barrier"`
+	// Wound int `json:"Wound"`
 	// elem
 	Attune string `json:"Attune"`
 	Power int `json:"Power"`
@@ -33,7 +37,7 @@ func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	buffer.HP = (*c).Life.Rate
 	if npc { 
 		// buffer.ID = "Dummy"
-		buffer.Power = base.ChancedRound((*(*c).Atts).Capacity) 
+		buffer.Power = -base.ChancedRound((*(*c).Atts).Capacity) 
 	} else { 
 		// buffer.ID = "Player"
 		buffer.Power = len((*c).Pool)
@@ -42,15 +46,16 @@ func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	buffer.TS = make(map[string]int) // (*c).ID
 	buffer.TS["Born"] = (*c).TSBorn
 	buffer.TS["Atts"] = (*c).TSAtts
+	body, elem := (*c).Body, (*c).Energy[0]
 	c.Unlock()
 	buffer.RXY.XYNow = [2]int{ camera[0]-path[1][0], camera[1]-path[1][1] }
 	buffer.RXY.RNow = path[0][0]
 	buffer.RXY.Rotate = path[0][1]
 	for i, each := range path[2:5] { buffer.RXY.XYBefore[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
+	if npc { buffer.Attune = fmt.Sprintf("%s%s", body.Elem(), elem.Elem())}
 	// immitation:
-	barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
-	buffer.Wound = penalty
-	buffer.Barrier = barrier
-	buffer.Attune = "TBD"
+	// barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
+	// buffer.Wound = penalty
+	// buffer.Barrier = barrier
 	return buffer
 }

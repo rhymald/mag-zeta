@@ -5,11 +5,11 @@ import "math"
 type Stream map[string][3]int
 
 // NEW
-func MakeStream() *Stream {
+func MakeStream(elem string) *Stream {
 	maj, min, dev := 0.0, 0.0, 0.0
 	for x:=0; x<4; x++ { maj += Rand() ; min += Rand() ; dev += Rand() }
 	leng := Vector(maj, min, dev) 
-	return &Stream{ ElemList[0]: [3]int{ CeilRound( maj/leng * 1000 ), CeilRound( min/leng * 1000 ), CeilRound( dev/leng * 1000 ) }}
+	return &Stream{ elem: [3]int{ CeilRound( maj/leng * 1000 ), CeilRound( min/leng * 1000 ), CeilRound( dev/leng * 1000 ) }}
 }
 
 
