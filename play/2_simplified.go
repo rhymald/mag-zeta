@@ -57,7 +57,7 @@ func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	for i, each := range path[2:5] { buffer.RXY.XYOld[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
 	if npc { 
 		// buffer.E = fmt.Sprintf("%s%s", eb, ee)
-		buffer.Name = fmt.Sprintf("[%s%s] Training dummy", eb, ee)
+		buffer.Name = fmt.Sprintf("%sTraining dummy%s", eb, ee)
 	} else { 
 		// buffer.E = fmt.Sprintf("%s", eb) 
 		buffer.Name = "Some player"
