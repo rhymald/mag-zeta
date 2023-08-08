@@ -6,19 +6,19 @@ import(
 	"log"
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/jackc/pgx/v5"
-	// "rhymald/mag-zeta/base"
+	"rhymald/mag-zeta/base"
 	"fmt"
 )
 
 func ConnectCacheDB() []*pgx.Conn {
 	config, err := pgx.ParseConfig(os.Getenv("CACHEDB_WRITER_URL"))
-	if err != nil {
-			log.Fatal(err)
-	}
+	if err != nil { log.Fatal(err) }
 	config.RuntimeParams["application_name"] = "$ mag_cached_grid"
 	writer, err := pgx.ConnectConfig(context.Background(), config)
-	if err != nil {
-			log.Fatal(err)
+	for err != nil {
+		log.Println("Waiting for DB:", err)
+		writer, err = pgx.ConnectConfig(context.Background(), config)
+		base.Wait(1618)
 	}
 	// defer conn.Close(context.Background())
 	err = crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return initTable(context.Background(), tx) })
@@ -48,30 +48,30 @@ func initTable(ctx context.Context, tx pgx.Tx) error {
 	return nil
 }
 
-func WriteTrace(writer *pgx.Conn, id string, trace *map[int][3]int) error {
-	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeAllTrace(context.Background(), tx, id, *trace) })
-	max, buffer := 0, *trace
-	for ts, _ := range buffer { if ts > max { max = ts }}
-	latest := buffer[max]
-	newTrace := make(map[int][3]int) ; newTrace[max] = latest
-	*trace = newTrace
-	return err
-}
-func writeAllTrace(ctx context.Context, tx pgx.Tx, id string, trace map[int][3]int) error {
-	query, first := "UPSERT INTO eua (id, t, x, y) VALUES", true
-	for ts, rxy := range trace {
-		if first {
-			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
-			first = false 
-		} else {
-			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
-		}
-	}
-	query = fmt.Sprintf("%s;", query)
-	log.Println(query)
-	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
-	return nil
-}
+// func WriteTrace(writer *pgx.Conn, id string, trace *map[int][3]int) error {
+// 	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeAllTrace(context.Background(), tx, id, *trace) })
+// 	max, buffer := 0, *trace
+// 	for ts, _ := range buffer { if ts > max { max = ts }}
+// 	latest := buffer[max]
+// 	newTrace := make(map[int][3]int) ; newTrace[max] = latest
+// 	*trace = newTrace
+// 	return err
+// }
+// func writeAllTrace(ctx context.Context, tx pgx.Tx, id string, trace map[int][3]int) error {
+// 	query, first := "UPSERT INTO eua (id, t, x, y) VALUES", true
+// 	for ts, rxy := range trace {
+// 		if first {
+// 			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
+// 			first = false 
+// 		} else {
+// 			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d')", query, id, ts, rxy[1], rxy[2])
+// 		}
+// 	}
+// 	query = fmt.Sprintf("%s;", query)
+// 	// log.Println(query)
+// 	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
+// 	return nil
+// }
 
 func WriteChunk(writer *pgx.Conn, chunk map[string][][3]int) error {
 	err := crdbpgx.ExecuteTx(context.Background(), writer, pgx.TxOptions{}, func(tx pgx.Tx) error { return writeChunk(context.Background(), tx, chunk) })
@@ -88,7 +88,7 @@ func writeChunk(ctx context.Context, tx pgx.Tx, chunk map[string][][3]int) error
 		}
 	}}
 	query = fmt.Sprintf("%s;", query)
-	log.Println(query)
+	// log.Println(query)
 	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
 	return nil
 }

@@ -27,7 +27,6 @@ var (
 )
 
 func newWorld() *Location {
-	base.Wait(4096)
 	buffer := Location{ ByID: make(map[string]*play.State), ID: base.EpochNS(), Writer: connect.ConnectCacheDB()[0] }
 	location := &buffer
 	go func(){ location.GridWriter_ByPush(GridCache) }()
@@ -43,7 +42,7 @@ func getAll(c *gin.Context) {
 	world.Lock() ; objLimit := len((*world).ByID)
 	takenID := "" // c.Request.Header["myplayerid"]
 	if _, ok := c.Request.Header["myplayerid"] ; ok { 
-		takenID = c.Request.Header["myplayerid"] } else { takenID = c.Param("myplayerid") 
+		takenID = c.GetHeader("myplayerid") } else { takenID = c.Param("myplayerid") 
 	}
 	myPlayer := &play.State{} 
 	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] } else { myPlayer = nil }
