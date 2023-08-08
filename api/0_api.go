@@ -35,13 +35,16 @@ func hiThere(c *gin.Context) {
 func jsonLoggerMiddleware() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(
 		func(params gin.LogFormatterParams) string {
+			if len(params.Path) >= 7 {
+				if params.StatusCode == 200 && params.Path[:7] == "/around" { return "" }
+			}
 			log := make(map[string]interface{})
-			log["status_code"] = params.StatusCode
-			log["path"] = params.Path
 			log["method"] = params.Method
-			log["start_time"] = params.TimeStamp.Format("2006/01/02 - 15:04:05")
+			log["way"] = params.Path
 			log["remote_addr"] = params.ClientIP
 			log["response_time"] = params.Latency.String()
+			log["start_time"] = params.TimeStamp.Format("2006/01/02 - 15:04:05")
+			log["status_code"] = params.StatusCode
  			s, _ := json.Marshal(log)
 			return string(s) + "\n"
 		},
