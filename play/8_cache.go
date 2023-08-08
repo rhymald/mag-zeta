@@ -181,7 +181,7 @@ func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
 	(*st).Current.Unlock()
 	angle := float64(latestStep[0])/1000 // * math.Pi / 180
 	newAng := base.Round((angle + rotate)*1000) // * math.Pi / 180
-	for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
+	// for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
  	newstep := [3]int{
 		newAng,
 		latestStep[1],

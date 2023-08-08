@@ -41,15 +41,19 @@ func getAll(c *gin.Context) {
 	_, spanPlayers := tracer.Start(ctx, "players")
 	countOfPlayers, countOfFoes := 0, 0
 	world.Lock() ; objLimit := len((*world).ByID)
-	takenID := c.Param("myplayerid")
+	takenID := "" // c.Request.Header["myplayerid"]
+	if _, ok := c.Request.Header["myplayerid"] ; ok { 
+		takenID = c.Request.Header["myplayerid"] } else { takenID = c.Param("myplayerid") 
+	}
 	myPlayer := &play.State{} 
 	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] } else { myPlayer = nil }
 	plimit, flimit := base.Round(math.Log2( float64(objLimit) )) + 4, 16 + base.Round(math.Sqrt( float64(objLimit) ))
 	radius := math.Sqrt(3)*4000 ; first := [5][2]int{} ; if myPlayer != nil { 
 		first = myPlayer.Path() 
-		if first[0][0] > 0 { first[0][0] += -1000 } else { first[0][0] += 1000 }
-		angle := float64(first[0][0]) / 1000 * 180
-		first[1][0], first[1][1] = first[1][0] - base.Round(float64(radius/2)*math.Sin(angle)), first[1][1] - base.Round(float64(radius/2)*math.Cos(angle))
+		for i:=2; i<5; i++ { first[i][0] += -first[1][0] ; first[i][1] += -first[1][1] }
+		// if first[0][0] > 0 { first[0][0] += -1000 } else { first[0][0] += 1000 }
+		// angle := float64(first[0][0]) / 1000 * 180
+		// first[1][0], first[1][1] = first[1][0] - base.Round(float64(radius/2)*math.Sin(angle)), first[1][1] - base.Round(float64(radius/2)*math.Cos(angle))
 		buffer = append(buffer, (*myPlayer).Current.Simplify(first, first[1]))
 	}
 	for id, each := range (*world).ByID { 

@@ -6,6 +6,7 @@ import (
 ) 
 
 type Simplified struct {
+	// E string `json:"E"`
 	Name string `json:"Name"`
 	ID string `json:"ID"`
 	TS map[string]int `json:"TS"` 
@@ -14,7 +15,6 @@ type Simplified struct {
 	// Barrier int `json:"Barrier"`
 	// Wound int `json:"Wound"`
 	// elem
-	E string `json:"E"`
 	PWR int `json:"PWR"`
 	// xyz
 	RXY struct {
@@ -56,11 +56,11 @@ func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	buffer.RXY.RAdd = path[0][1]
 	for i, each := range path[2:5] { buffer.RXY.XYOld[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
 	if npc { 
-		buffer.E = fmt.Sprintf("%s%s", eb, ee)
-		buffer.Name = "Training dummy"
-		} else { 
-			buffer.E = fmt.Sprintf("%s", eb) 
-			buffer.Name = "Some player"
+		// buffer.E = fmt.Sprintf("%s%s", eb, ee)
+		buffer.Name = fmt.Sprintf("[%s%s] Training dummy", eb, ee)
+	} else { 
+		// buffer.E = fmt.Sprintf("%s", eb) 
+		buffer.Name = "Some player"
 	}
 	// immitation:
 	// barrier, penalty := base.CeilRound(100*base.Rand()), base.FloorRound(100*base.Rand())
