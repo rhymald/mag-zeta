@@ -4,18 +4,20 @@ import (
 	"rhymald/mag-zeta/base"
 	"sync"
 	"math"
+	// "fmt"
 )
 
 const (
-	tAxisStep = 256 //ms for grid, keep it <500
-	tRange = 16*1024 //ms per bucket, must be >= x2 Retro
-	tRetro = 4096 //ms let it be %(4*Step)
+	tAxisStep = 200 //ms for grid, keep it <500
+	tRange = 60 //steps per bucket, must be >= x2 Retro
+	tRetro = 10 //steps per retro
 )
 
 type State struct {
 	Trace struct {
-		Odd map[int][3]int `json:"Odd"`  // time !% 2: dir + x + y 
-		Even map[int][3]int `json:"Even"` // time % 2: dir + x + y 
+		Ist map[int][3]int `json:"Ist"` // time % 3 = 1: dir + x + y 
+		Snd map[int][3]int `json:"Snd"` // time % 3 = 2: dir + x + y 
+		Erd map[int][3]int `json:"Erd"` // time % 3 = 0: dir + x + y 
 		sync.Mutex
 	} `json:"Trace"`
 	Effects map[int]*base.Effect `json:"Effects"`
@@ -50,8 +52,9 @@ func (c *Character) NewState() *State {
 	buffer.Writing.Time["Life"] = 0 
 	buffer.Writing.Life = *(base.MakeLife())
 	buffer.Writing.Life.Rate = 0
-	buffer.Trace.Odd = make(map[int][3]int)
-	buffer.Trace.Even = make(map[int][3]int)
+	buffer.Trace.Ist = make(map[int][3]int)
+	buffer.Trace.Snd = make(map[int][3]int)
+	buffer.Trace.Erd = make(map[int][3]int)
 	return &buffer
 }
 
@@ -77,22 +80,30 @@ func (st *State) UpdLife() { // used after write
 }
 // +write life - tbd in thicket package
 
-func (st *State) Move(writeToCache chan map[string][][3]int) {
+func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][][3]int) {
 	epoch := base.Epoch()
-	now, even := (epoch%tRange)/tAxisStep, (epoch/tRange)%2 == 0
+	now, even := (epoch/tAxisStep)%tRange, (epoch/(tRange*tAxisStep))%3
 	(*st).Trace.Lock()
-	traceLen := len((*st).Trace.Odd)+len((*st).Trace.Even)
+	traceLen := len((*st).Trace.Ist)+len((*st).Trace.Snd)+len((*st).Trace.Erd)
 	if traceLen == 0 { 
-		if even {
-			(*st).Trace.Even[now] = [3]int{ 
+		if even == 0 {
+			(*st).Trace.Erd[now] = [3]int{ 
 				base.ChancedRound( 2000*base.Rand()-1000 ), 
 				base.ChancedRound( 2000*base.Rand()-1000 ), 
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
 			(*st).Trace.Unlock()
 			return 
+		} else if even == 1 {
+			(*st).Trace.Ist[now] = [3]int{ 
+				base.ChancedRound( 2000*base.Rand()-1000 ),
+				base.ChancedRound( 2000*base.Rand()-1000 ),
+				base.ChancedRound( 2000*base.Rand()-1000 ),
+			}
+			(*st).Trace.Unlock()
+			return 
 		} else {
-			(*st).Trace.Odd[now] = [3]int{ 
+			(*st).Trace.Snd[now] = [3]int{ 
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 				base.ChancedRound( 2000*base.Rand()-1000 ),
@@ -101,147 +112,177 @@ func (st *State) Move(writeToCache chan map[string][][3]int) {
 			return 
 		}
 	}
-	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -tRange*2/tAxisStep-1, map[int][3]int{}
-	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
-	for ts, each := range later { buffer[ts-tRange/tAxisStep] = each }
-	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
-		buffer[ts-tRange/tAxisStep] = each 
-		if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
-	}}
+	later, trace, wipe := (*st).Trace.Snd, (*st).Trace.Erd, &(*st).Trace.Ist
+	if even == 1 { 
+		later, trace, wipe = (*st).Trace.Erd, (*st).Trace.Ist, &(*st).Trace.Snd 
+	} else if even == 2 {
+		later, trace, wipe = (*st).Trace.Ist, (*st).Trace.Snd, &(*st).Trace.Erd 
+	}
+	*wipe = make(map[int][3]int)
+	latest, buffer := -tRange, make(map[int][3]int)
+	// fmt.Println("Read traces STARTED ================================")
+	for ts, each := range later { buffer[ts-tRange] = each }// ; fmt.Println("READing old traces:", even, ts-tRange, each) }
+	for ts, each := range trace { buffer[ts] = each }//; fmt.Println("READing current traces:", even, ts, each)}
+	// fmt.Println("Read traces ----------------------------")
+	// for ts, each := range buffer { fmt.Println("Read traces:", even, ts, each) }
+	// fmt.Println("Read traces FINISHED -------------------")
 	for ts, _ := range buffer { if ts > latest { latest = ts } }
 	latestStep := buffer[latest]
 	(*st).Current.Lock()
 	distance := (*st.Current.Atts).Agility // static yet
 	id := (*st).Current.GetID()
 	(*st).Current.Unlock()
-	angle := float64(latestStep[0])/1000 * 180 //math.Pi / 180
-	newstep := [3]int{
-		latestStep[0],
-		base.Round(float64(latestStep[1]) - 1000*distance*math.Sin(angle)),
-		base.Round(float64(latestStep[2]) - 1000*distance*math.Cos(angle)),
- 	}
-	toWrite := make(map[string][][3]int) // id: t, x, y
-	if even {
-		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+tRange/tAxisStep] = latestStep }
-			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
-		}
-		if now > 0 { (*st).Trace.Even[now] = newstep } else { (*st).Trace.Odd[now+tRange/tAxisStep] = newstep }
-		// (*st).Trace[now] = newstep
-	} else {
-		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+tRange/tAxisStep] = latestStep }
-			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
-		}
-		if now > 0 { (*st).Trace.Odd[now] = newstep } else { (*st).Trace.Even[now+tRange/tAxisStep] = newstep }
-	}
-	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
-	(*st).Trace.Unlock()
-	writeToCache <- toWrite
-	base.Wait(float64(tAxisStep)*4)// / math.Log2(distance+1)) // 1.536 - 0.256
-}
-
-func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
-	// if math.Abs(rotate) < 1/512 { return }
-	epoch := base.Epoch()
-	now, even := (epoch%tRange)/tAxisStep, (epoch/tRange)%2 == 0
-	(*st).Trace.Lock()
-	traceLen := len((*st).Trace.Odd)+len((*st).Trace.Even)
-	if traceLen == 0 { 
-		if even {
-			(*st).Trace.Even[now] = [3]int{ 
-				base.ChancedRound( 2000*base.Rand()-1000 ), 
-				base.ChancedRound( 2000*base.Rand()-1000 ), 
-				base.ChancedRound( 2000*base.Rand()-1000 ),
-			}
-			(*st).Trace.Unlock()
-			return 
-		} else {
-			(*st).Trace.Odd[now] = [3]int{ 
-				base.ChancedRound( 2000*base.Rand()-1000 ),
-				base.ChancedRound( 2000*base.Rand()-1000 ),
-				base.ChancedRound( 2000*base.Rand()-1000 ),
-			}
-			(*st).Trace.Unlock()
-			return 
-		}
-	}
-	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -tRange*2/tAxisStep-1, map[int][3]int{}
-	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
-	for ts, each := range later { buffer[ts-tRange/tAxisStep] = each }
-	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
-		buffer[ts-tRange/tAxisStep] = each 
-		if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
-	}}
-	for ts, _ := range buffer { if ts > latest { latest = ts } }
-	latestStep := buffer[latest]
-	(*st).Current.Lock()
-	// distance := (*st.Current.Atts).Agility // to be replaced 
-	id := (*st).Current.GetID()
-	(*st).Current.Unlock()
 	angle := float64(latestStep[0])/1000 // * math.Pi / 180
 	newAng := base.Round((angle + rotate)*1000) // * math.Pi / 180
-	// for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
- 	newstep := [3]int{
-		newAng,
-		latestStep[1],
-		latestStep[2],
+	for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
+	newstep := [3]int{ newAng, latestStep[1], latestStep[2] }
+	if step {
+		turn := float64(newAng) / 1000 * 180
+		newstep[1] = base.Round(float64(latestStep[1]) - 1000*distance*math.Sin(turn))
+		newstep[2] = base.Round(float64(latestStep[2]) - 1000*distance*math.Cos(turn))
 	}
 	toWrite := make(map[string][][3]int) // id: t, x, y
-	if even {
+	if even == 1 {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+tRange/tAxisStep] = latestStep }
+			if ts >= 0 { (*st).Trace.Ist[ts] = latestStep 
+				// fmt.Println("Writing current traces:", even, ts, latestStep) 
+			} else { (*st).Trace.Snd[ts+tRange] = latestStep }//; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
-		if now > 0 { (*st).Trace.Even[now] = newstep } else { (*st).Trace.Odd[now+tRange/tAxisStep] = newstep }
-		// (*st).Trace[now] = newstep
+		// fmt.Println("Write traces ----------------------------")
+		// fmt.Println("WRITTEN trace:", even, now, newstep)
+		// fmt.Println("Write traces FINISHED ============================")
+		(*st).Trace.Ist[now] = newstep //else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+	} else if even == 2 {
+		for ts := latest ; ts < now ; ts++ { 
+			if ts >= 0 { (*st).Trace.Snd[ts] = latestStep 
+				// fmt.Println("Writing current traces:", even, ts, latestStep) 
+			} else { (*st).Trace.Erd[ts+tRange] = latestStep }// ; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
+			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+		}
+		// fmt.Println("Write traces ----------------------------")
+		// fmt.Println("WRITTEN trace:", even, now, newstep)
+		// fmt.Println("Write traces FINISHED ============================")
+		(*st).Trace.Snd[now] = newstep
 	} else {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+tRange/tAxisStep] = latestStep }
+			if ts >= 0 { (*st).Trace.Erd[ts] = latestStep 
+				// fmt.Println("Writing current traces:", even, ts, latestStep) 
+			} else { (*st).Trace.Ist[ts+tRange] = latestStep }// ; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
-		if now > 0 { (*st).Trace.Odd[now] = newstep } else { (*st).Trace.Even[now+tRange/tAxisStep] = newstep }
+		// fmt.Println("Write traces ----------------------------")
+		// fmt.Println("WRITTEN trace:", even, now, newstep)
+		// fmt.Println("Write traces FINISHED ============================")
+		(*st).Trace.Erd[now] = newstep
 	}
 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
 	(*st).Trace.Unlock()
 	writeToCache <- toWrite
-	base.Wait(float64(tAxisStep))// / math.Log2(distance+1)) // 0.256 - 0.032
+	base.Wait(float64(tAxisStep)*math.Pi)// / math.Log2(distance+1)) // 1.536 - 0.256
 }
 
+// func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {
+// 	// if math.Abs(rotate) < 1/512 { return }
+// 	epoch := base.Epoch()
+// 	now, even := (epoch%(tRange*tAxisStep))/tAxisStep, (epoch/(tRange*tAxisStep))%2 == 0
+// 	(*st).Trace.Lock()
+// 	traceLen := len((*st).Trace.Odd)+len((*st).Trace.Even)
+// 	if traceLen == 0 { 
+// 		if even {
+// 			(*st).Trace.Even[now] = [3]int{ 
+// 				base.ChancedRound( 2000*base.Rand()-1000 ), 
+// 				base.ChancedRound( 2000*base.Rand()-1000 ), 
+// 				base.ChancedRound( 2000*base.Rand()-1000 ),
+// 			}
+// 			(*st).Trace.Unlock()
+// 			return 
+// 		} else {
+// 			(*st).Trace.Odd[now] = [3]int{ 
+// 				base.ChancedRound( 2000*base.Rand()-1000 ),
+// 				base.ChancedRound( 2000*base.Rand()-1000 ),
+// 				base.ChancedRound( 2000*base.Rand()-1000 ),
+// 			}
+// 			(*st).Trace.Unlock()
+// 			return 
+// 		}
+// 	}
+// 	trace, later, latest, buffer := (*st).Trace.Odd, (*st).Trace.Even, -(tRange*tAxisStep)*2/tAxisStep-1, map[int][3]int{}
+// 	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
+// 	for ts, each := range later { buffer[ts-(tRange*tAxisStep)/tAxisStep] = each }
+// 	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
+// 		buffer[ts-(tRange*tAxisStep)/tAxisStep] = each 
+// 		if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
+// 	}}
+// 	for ts, _ := range buffer { if ts > latest { latest = ts } }
+// 	latestStep := buffer[latest]
+// 	(*st).Current.Lock()
+// 	// distance := (*st.Current.Atts).Agility // to be replaced 
+// 	id := (*st).Current.GetID()
+// 	(*st).Current.Unlock()
+// 	angle := float64(latestStep[0])/1000 // * math.Pi / 180
+// 	newAng := base.Round((angle + rotate)*1000) // * math.Pi / 180
+// 	// for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
+//  newstep := [3]int{
+// 		newAng,
+// 		latestStep[1],
+// 		latestStep[2],
+// 	}
+// 	toWrite := make(map[string][][3]int) // id: t, x, y
+// 	if even {
+// 		for ts := latest ; ts < now ; ts++ { 
+// 			if ts > 0 { (*st).Trace.Even[ts] = latestStep } else { (*st).Trace.Odd[ts+(tRange*tAxisStep)/tAxisStep] = latestStep }
+// 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+// 		}
+// 		if now > 0 { (*st).Trace.Even[now] = newstep } else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+// 		// (*st).Trace[now] = newstep
+// 	} else {
+// 		for ts := latest ; ts < now ; ts++ { 
+// 			if ts > 0 { (*st).Trace.Odd[ts] = latestStep } else { (*st).Trace.Even[ts+(tRange*tAxisStep)/tAxisStep] = latestStep }
+// 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
+// 		}
+// 		if now > 0 { (*st).Trace.Odd[now] = newstep } else { (*st).Trace.Even[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+// 	}
+// 	toWrite[id] = append(toWrite[id], [3]int{now, newstep[1], newstep[2]})
+// 	// fmt.Println((*st).Trace)
+// 	(*st).Trace.Unlock()
+// 	writeToCache <- toWrite
+// 	base.Wait(float64(tAxisStep))// / math.Log2(distance+1)) // 0.256 - 0.032
+// }
+
 func (st *State) Path() [5][2]int {
-	period := tRetro/tAxisStep // ms
+	period := tRetro // steps
 	epoch := base.Epoch()
-	now, even := (epoch%tRange)/tAxisStep, (epoch/tRange)%2 == 0
+	now, even := (epoch/tAxisStep)%tRange, (epoch/(tRange*tAxisStep))%3
 	(*st).Trace.Lock()
-	// trace := (*st).Trace
-	trace, later, buffer := (*st).Trace.Odd, (*st).Trace.Even, map[int][3]int{}
-	if even { trace, later = (*st).Trace.Even, (*st).Trace.Odd }
+	trace, later := (*st).Trace.Erd, (*st).Trace.Snd
+	if even == 1 { 
+		trace, later = (*st).Trace.Ist, (*st).Trace.Erd 
+	} else if even == 2 {
+		trace, later = (*st).Trace.Snd, (*st).Trace.Ist
+	}
+	buffer := make(map[int][3]int)
 	if len(trace)+len(later) == 0 { (*st).Trace.Unlock() ; return [5][2]int{} }
-	for ts, each := range later { buffer[ts-tRange/tAxisStep] = each }
-	for ts, each := range trace { if ts < now { buffer[ts] = each } else { 
-		buffer[ts-tRange/tAxisStep] = each 
-		// if even { delete((*st).Trace.Even, ts) } else { delete((*st).Trace.Odd, ts) }
-	}}
-	// for ts, _ := range trace { if ts > latest { latest = ts } }
-	// latestStep := trace[latest]
+	for ts, each := range later { buffer[ts-tRange] = each }
+	for ts, each := range trace { buffer[ts] = each }
 	(*st).Trace.Unlock()
 	counter, rs := 0, 0
 	xs1, ys1, counter1 := 0, 0, 0
 	xs2, ys2, counter2 := 0, 0, 0
 	xs3, ys3, counter3 := 0, 0, 0
-	max := -tRange*2/tAxisStep - 1
+	max := -tRange ; for ts, _ := range buffer { if ts > max { max = ts } }
+	latest := buffer[max]
+	delete(buffer, max)
 	for ts, rXY := range buffer {
-		if ts > max { max = ts }
-		if (now - ts)*3 / period == 0 { 
+		if ((now-ts)*3+1) / period == 0 { 
 			xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ ; rs += rXY[0]; counter++
-		} else if (now - ts)*3 / period == 1 { 
+		} else if ((now-ts)*3+1) / period == 1 { 
 			xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0]; counter++
-		} else if (now - ts)*3 / period == 2 { 
+		} else if ((now-ts)*3+1) / period == 2 { 
 			xs3 += rXY[1] ; ys3 += rXY[2] ; counter3++ ; rs += rXY[0]; counter++
 		}
 	}
-	latest := buffer[max]
-	rotate := latest[0] - (rs + latest[0]) / (counter + 1)
+	rotate := rs - latest[0]*counter
 	for { if rotate > 999 { rotate += -2000 } else if rotate < -1000 { rotate += 2000 } else { break }}
 	if counter1 == 0 { 
 		return [5][2]int{

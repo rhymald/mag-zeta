@@ -30,7 +30,7 @@ type Simplified struct {
 	} `json:"Look"`
 }
 
-func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
+func (c *Character) Simplify(path [5][2]int) Simplified {
 	var buffer Simplified
 	c.Lock()
 	npc := c.IsNPC()
@@ -51,10 +51,10 @@ func (c *Character) Simplify(path [5][2]int, camera [2]int) Simplified {
 	if eb == base.ElemList[0] { eb = "" }
 	if ee == base.PhysList[0] { if eb == "" { ee = "🧿" } else { ee = ""}}
 	c.Unlock()
-	buffer.RXY.XYNow = [2]int{ camera[0]-path[1][0], camera[1]-path[1][1] }
+	buffer.RXY.XYNow = [2]int{ path[1][0], path[1][1] }
 	buffer.RXY.RNow = path[0][0]
 	buffer.RXY.RAdd = path[0][1]
-	for i, each := range path[2:5] { buffer.RXY.XYOld[i] = [2]int{ camera[0]-each[0], camera[1]-each[1] } }
+	for i, each := range path[2:5] { buffer.RXY.XYOld[i] = [2]int{ each[0], each[1] } }
 	if npc { 
 		// buffer.E = fmt.Sprintf("%s%s", eb, ee)
 		buffer.Name = fmt.Sprintf("%sTraining dummy%s", eb, ee)
