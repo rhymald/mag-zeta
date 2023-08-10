@@ -1,6 +1,7 @@
 package play
 
 import (
+	// "rhymald/mag-zeta/connect"
 	"rhymald/mag-zeta/base"
 	"sync"
 	"math"
@@ -8,10 +9,14 @@ import (
 )
 
 const (
-	tAxisStep = 200 //ms for grid, keep it <500
-	tRange = 60 //steps per bucket, must be >= x2 Retro
+	// 1 minute t-axis / 3: latest = 4 sec
+	tAxisStep = 400 //ms for grid
+	tRange = 80 //steps per bucket, must be >= Retro
 	tRetro = 10 //steps per retro
+	// db supports cleanup every min
 )
+
+func TAxis() int { return (base.Epoch()/tAxisStep)%tRange }
 
 type State struct {
 	Trace struct {
@@ -180,6 +185,7 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 	(*st).Trace.Unlock()
 	writeToCache <- toWrite
 	base.Wait(float64(tAxisStep)*math.Pi)// / math.Log2(distance+1)) // 1.536 - 0.256
+	// connect.ReadRound(world. )
 }
 
 // func (st *State) Turn(rotate float64, writeToCache chan map[string][][3]int) {

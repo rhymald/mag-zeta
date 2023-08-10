@@ -35,12 +35,12 @@ func initTable(ctx context.Context, tx pgx.Tx) error {
 	log.Println(" => Creating grid table: eua...")
 	query := fmt.Sprintf("CREATE TABLE %s (%s, %s, %s, %s, %s, %s, %s) WITH (%s);",
 		"eua",
-		"stepid UUID PRIMARY KEY default gen_random_uuid()",
+		"stepid STRING PRIMARY KEY AS (CONCAT(id, '@', CAST(t AS STRING))) STORED",// default gen_random_uuid()",
 		"inserted_at TIMESTAMP default current_timestamp()",
 		"id TEXT",
 		"t INT",
-		"x INT",
-		"y INT",
+		"x FLOAT",
+		"y FLOAT",
 		"INDEX position (t, x, y)",
 		"ttl_expire_after = '61 seconds', ttl_job_cron = '*/1 * * * *'",
 	)
@@ -92,3 +92,54 @@ func writeChunk(ctx context.Context, tx pgx.Tx, chunk map[string][][3]int) error
 	if _, err := tx.Exec(ctx, query); err != nil { log.Fatal(err) ; return err }
 	return nil
 }
+
+
+func ReadRound(writer *pgx.Conn, x, y, r, t int) error {
+	// Read the balance.
+	// var list string
+	// if err := tx.QueryRow(ctx,
+	// 		"SELECT id FROM uae WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(SQR($5-x)+SQR($6-y)) < $7", x+r, x-r, y+r, y-r, x, y, r).Scan(&list); err != nil {
+	// 		return err
+	// }
+	list, err := writer.Query(context.Background(), "SELECT id, t FROM eua WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(POW(($5-x),2)+POW(($6-y),2)) < $7 AND t < $8+1 AND t > $8-2", x+r, x-r, y+r, y-r, x, y, r, t)
+	defer list.Close()
+	if err != nil {log.Fatal(err)}
+	log.Printf("Characters within %d from [%d,%d]:\n", r, x, y)
+	for list.Next() {
+		var id string
+		var t int
+		// var ts string
+		if err := list.Scan(&id, &t); err != nil { log.Fatal(err) }
+		log.Printf(" => %d: %s\n", t, id)//, ts)
+	}
+	
+
+	// // Perform the transfer.
+	// log.Printf("Transferring funds from account with ID %s to account with ID %s...", from, to)
+	// if _, err := tx.Exec(ctx,
+	// 		"UPDATE accounts SET balance = balance - $1 WHERE id = $2", amount, from); err != nil {
+	// 		return err
+	// }
+	// if _, err := tx.Exec(ctx,
+	// 		"UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, to); err != nil {
+	// 		return err
+	// }
+	return nil
+}
+
+// func printBalances(conn *pgx.Conn) error {
+// 	rows, err := conn.Query(context.Background(), "SELECT id, balance FROM accounts")
+// 	if err != nil {
+// 			log.Fatal(err)
+// 	}
+// 	defer rows.Close()
+// 	for rows.Next() {
+// 			var id uuid.UUID
+// 			var balance int
+// 			if err := rows.Scan(&id, &balance); err != nil {
+// 					log.Fatal(err)
+// 			}
+// 			log.Printf("%s: %d\n", id, balance)
+// 	}
+// 	return nil
+// }
