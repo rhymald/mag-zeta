@@ -78,13 +78,13 @@ func WriteChunk(writer *pgx.Conn, chunk map[string][][3]int) error {
 	return err
 }
 func writeChunk(ctx context.Context, tx pgx.Tx, chunk map[string][][3]int) error {
-	query, first := "UPSERT INTO eua (id, t, x, y) VALUES", true
+	query, first := "UPSERT INTO eua (id, t, x, y, inserted_at) VALUES", true
 	for id, char := range chunk { for _, txy := range char {
 		if first {
-			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d')", query, id, txy[0], txy[1], txy[2])
+			query = fmt.Sprintf("%s ('%s', '%d', '%d', '%d', current_timestamp())", query, id, txy[0], txy[1], txy[2])
 			first = false 
 		} else {
-			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d')", query, id, txy[0], txy[1], txy[2])
+			query = fmt.Sprintf("%s, ('%s', '%d', '%d', '%d', current_timestamp())", query, id, txy[0], txy[1], txy[2])
 		}
 	}}
 	query = fmt.Sprintf("%s;", query)
@@ -101,18 +101,19 @@ func ReadRound(writer *pgx.Conn, x, y, r, t int) error {
 	// 		"SELECT id FROM uae WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(SQR($5-x)+SQR($6-y)) < $7", x+r, x-r, y+r, y-r, x, y, r).Scan(&list); err != nil {
 	// 		return err
 	// }
-	list, err := writer.Query(context.Background(), "SELECT id, t FROM eua WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(POW(($5-x),2)+POW(($6-y),2)) < $7 AND t < $8+1 AND t > $8-2", x+r, x-r, y+r, y-r, x, y, r, t)
+	list, err := writer.Query(context.Background(), "SELECT id, t, date_part('epoch', inserted_at) FROM eua WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(POW(($5-x),2)+POW(($6-y),2)) < $7 AND t < $8+2 AND t > $8-2", x+r, x-r, y+r, y-r, x, y, r, t)
 	defer list.Close()
 	if err != nil {log.Fatal(err)}
 	log.Printf("Characters within %d from [%d,%d]:\n", r, x, y)
+	start:=base.StartEpoch/1000000+base.Epoch()
 	for list.Next() {
 		var id string
 		var t int
-		// var ts string
-		if err := list.Scan(&id, &t); err != nil { log.Fatal(err) }
-		log.Printf(" => %d: %s\n", t, id)//, ts)
+		var ts float64
+		if err := list.Scan(&id, &t, &ts); err != nil { log.Fatal(err) }
+		diff := int(1000*ts)-start
+		log.Printf(" => %3d: %s | %+d\n", t, id, diff)
 	}
-	
 
 	// // Perform the transfer.
 	// log.Printf("Transferring funds from account with ID %s to account with ID %s...", from, to)
