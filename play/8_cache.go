@@ -258,9 +258,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 // }
 
 func (st *State) Path() [5][2]int {
-	period := tRetro // steps
+	// period := tRetro // steps
 	epoch := base.Epoch()
-	now, even := (epoch/tAxisStep)%tRange, (epoch/(tRange*tAxisStep))%3
+	even := (epoch/(tRange*tAxisStep))%3
 	(*st).Trace.Lock()
 	trace, later := (*st).Trace.Erd, (*st).Trace.Snd
 	if even == 1 { 
@@ -268,62 +268,66 @@ func (st *State) Path() [5][2]int {
 	} else if even == 2 {
 		trace, later = (*st).Trace.Snd, (*st).Trace.Ist
 	}
+	(*st).Trace.Unlock()
+	if len(trace)+len(later) == 0 { return [5][2]int{} }
 	buffer := make(map[int][3]int)
-	if len(trace)+len(later) == 0 { (*st).Trace.Unlock() ; return [5][2]int{} }
 	for ts, each := range later { buffer[ts-tRange] = each }
 	for ts, each := range trace { buffer[ts] = each }
-	(*st).Trace.Unlock()
-	counter, rs := 0, 0
-	xs1, ys1, counter1 := 0, 0, 0
-	xs2, ys2, counter2 := 0, 0, 0
-	xs3, ys3, counter3 := 0, 0, 0
-	max := -tRange ; for ts, _ := range buffer { if ts > max { max = ts } }
-	latest := buffer[max]
-	delete(buffer, max)
-	for ts, rXY := range buffer {
-		if ((now-ts)*3+1) / period == 0 { 
-			xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ ; rs += rXY[0]; counter++
-		} else if ((now-ts)*3+1) / period == 1 { 
-			xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0]; counter++
-		} else if ((now-ts)*3+1) / period == 2 { 
-			xs3 += rXY[1] ; ys3 += rXY[2] ; counter3++ ; rs += rXY[0]; counter++
+	tIndex, idx := []int{}, 0
+	for i:=tRange ; i>-tRange ; i-- {
+		if _, ok := buffer[i] ; ok { tIndex = append(tIndex, i) ; idx++ }
+		if idx >= 4 { break }
+	}
+	// xs1, ys1, counter1 := 0, 0, 0
+	// xs2, ys2, counter2 := 0, 0, 0
+	// xs3, ys3, counter3 := 0, 0, 0
+	// max := -tRange ; for ts, _ := range buffer { if ts > max { max = ts } }
+	// latest := buffer[max]
+	// delete(buffer, max)
+	// for ts, rXY := range buffer {
+	// 	if ((now-ts)*3+1) / period == 0 { 
+	// 		xs1 += rXY[1] ; ys1 += rXY[2] ; counter1++ ; rs += rXY[0]; counter++
+	// 	} else if ((now-ts)*3+1) / period == 1 { 
+	// 		xs2 += rXY[1] ; ys2 += rXY[2] ; counter2++ ; rs += rXY[0]; counter++
+	// 	} else if ((now-ts)*3+1) / period == 2 { 
+	// 		xs3 += rXY[1] ; ys3 += rXY[2] ; counter3++ ; rs += rXY[0]; counter++
+	// 	}
+	// }
+	// rotate := rs - latest[0]*counter
+// 	for { if rotate > 999 { rotate += -2000 } else if rotate < -1000 { rotate += 2000 } else { break }}
+	if idx <= 1 { 
+		return [5][2]int{
+			[2]int{ buffer[tIndex[0]][0], 0 },
+			[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
+			[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
+			[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
+			[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
 		}
 	}
-	rotate := rs - latest[0]*counter
-	for { if rotate > 999 { rotate += -2000 } else if rotate < -1000 { rotate += 2000 } else { break }}
-	if counter1 == 0 { 
+	if idx == 2 {
 		return [5][2]int{
-			[2]int{ latest[0], 0 },
-			[2]int{ latest[1], latest[2] },
-			[2]int{ latest[1], latest[2] },
-			[2]int{ latest[1], latest[2] },
-			[2]int{ latest[1], latest[2] },
-		}
-	}
-	if counter2 == 0 {
-		return [5][2]int{
-			[2]int{ latest[0], rotate },
-			[2]int{ latest[1], latest[2] },
-			[2]int{ xs1/counter1, ys1/counter1 },
-			[2]int{ xs1/counter1, ys1/counter1 },
-			[2]int{ xs1/counter1, ys1/counter1 },
+			[2]int{ buffer[tIndex[0]][0], -buffer[tIndex[0]][0]+buffer[tIndex[1]][0] },
+			[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
+			[2]int{ buffer[tIndex[1]][1], buffer[tIndex[1]][2] },
+			[2]int{ buffer[tIndex[1]][1], buffer[tIndex[1]][2] },
+			[2]int{ buffer[tIndex[1]][1], buffer[tIndex[1]][2] },
 		}	
 	}
-	if counter3 == 0 {
+	if idx == 3 {
 		return [5][2]int{
-			[2]int{ latest[0], rotate },
-			[2]int{ latest[1], latest[2] },
-			[2]int{ xs1/counter1, ys1/counter1 },
-			[2]int{ xs2/counter2, ys2/counter2 },
-			[2]int{ xs3/counter2, ys3/counter2 },
-			}	
+			[2]int{ buffer[tIndex[0]][0], -buffer[tIndex[0]][0]+buffer[tIndex[1]][0] },
+			[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
+			[2]int{ buffer[tIndex[1]][1], buffer[tIndex[1]][2] },
+			[2]int{ buffer[tIndex[2]][1], buffer[tIndex[2]][2] },
+			[2]int{ buffer[tIndex[2]][1], buffer[tIndex[2]][2] },
+		}	
 	}
 	return [5][2]int{
-		[2]int{ latest[0], rotate },
-		[2]int{ latest[1], latest[2] },
-		[2]int{ xs1/counter1, ys1/counter1 },
-		[2]int{ xs2/counter2, ys2/counter2 },
-		[2]int{ xs3/counter3, ys3/counter3 },
+		[2]int{ buffer[tIndex[0]][0], -buffer[tIndex[0]][0]+buffer[tIndex[1]][0] },
+		[2]int{ buffer[tIndex[0]][1], buffer[tIndex[0]][2] },
+		[2]int{ buffer[tIndex[1]][1], buffer[tIndex[1]][2] },
+		[2]int{ buffer[tIndex[2]][1], buffer[tIndex[2]][2] },
+		[2]int{ buffer[tIndex[3]][1], buffer[tIndex[3]][2] },
 	}
 }
 
