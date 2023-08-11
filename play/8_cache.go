@@ -12,7 +12,7 @@ const (
 	// 1 minute t-axis / 3: latest = 4 sec
 	tAxisStep = 400 //ms for grid
 	tRange = 80 //steps per bucket, must be >= Retro
-	tRetro = 10 //steps per retro
+	tRetro = 3 //steps per retro
 	// db supports cleanup every min
 )
 
@@ -93,7 +93,7 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 	if traceLen == 0 { 
 		if even == 0 {
 			(*st).Trace.Erd[now] = [3]int{ 
-				base.ChancedRound( 2000*base.Rand()-1000 ), 
+				base.ChancedRound( 2000*base.Rand()-1000 )/250*250, 
 				base.ChancedRound( 2000*base.Rand()-1000 ), 
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
@@ -101,7 +101,7 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 			return 
 		} else if even == 1 {
 			(*st).Trace.Ist[now] = [3]int{ 
-				base.ChancedRound( 2000*base.Rand()-1000 ),
+				base.ChancedRound( 2000*base.Rand()-1000 )/250*250,
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
@@ -109,7 +109,7 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 			return 
 		} else {
 			(*st).Trace.Snd[now] = [3]int{ 
-				base.ChancedRound( 2000*base.Rand()-1000 ),
+				base.ChancedRound( 2000*base.Rand()-1000 )/250*250,
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
@@ -142,9 +142,10 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 	for { if newAng > 1000 { newAng += -2000 } else if newAng < -1000 { newAng += 2000 } else { break }}
 	newstep := [3]int{ newAng, latestStep[1], latestStep[2] }
 	if step {
-		turn := float64(newAng) / 1000 * 180
-		newstep[1] = base.Round(float64(latestStep[1]) - 1000*distance*math.Sin(turn))
-		newstep[2] = base.Round(float64(latestStep[2]) - 1000*distance*math.Cos(turn))
+		turn := float64(newAng) / 1000 * math.Pi
+		newstep[1] = base.Round(float64(latestStep[1]) + 1000*distance*math.Sin(turn))
+		newstep[2] = base.Round(float64(latestStep[2]) + 1000*distance*math.Cos(turn))
+		// fmt.Println(angle*180, "--to--", turn/math.Pi*180, "--with--", 1000*math.Sin(turn), 1000*math.Cos(turn))
 	}
 	toWrite := make(map[string][][3]int) // id: t, x, y
 	if even == 1 {

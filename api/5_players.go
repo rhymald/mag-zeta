@@ -44,7 +44,7 @@ func newPlayer(c *gin.Context) {
 	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
 	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
 	go func(){ for {
-		state.Move(0.09, true, GridCache)
+		state.Move(1.0/8, true, GridCache)
 		// state.Turn(0.09, GridCache)
 	}}()
 	// go func(){ for {state.Turn(1/math.Phi/math.Phi * float64(base.Epoch()%3-1), GridCache)} }()
