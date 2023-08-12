@@ -11,8 +11,12 @@ func (loc *Location) GridWriter_ByPush(writeToCache chan map[string][][3]int) {
 		connect.WriteChunk((*loc).Writer, char)
 		for _, trace := range char {
 			x, y := trace[len(trace)-1][1], trace[len(trace)-1][2]
-			t, r := play.TAxis(), 700
+			t, r := play.TAxis(), 700*2
 			connect.ReadRound((*loc).Writer, x, y, r, t)
+			break
 		}
+		// find path cross, if cross collide
+		// collide: leftoves of paths after crosses = strength
+		// write collision
 	}
 } 

@@ -49,7 +49,7 @@ func getAll(c *gin.Context) {
 	plimit, flimit := base.Round(math.Log2( float64(objLimit) )) + 4, 16 + base.Round(math.Sqrt( float64(objLimit) ))
 	radius := math.Sqrt(3)*4000 ; first := [5][2]int{} ; if myPlayer != nil { 
 		first = myPlayer.Path() 
-		for i:=2; i<5; i++ { first[i][0] += -first[1][0] ; first[i][1] += -first[1][1] }
+		// for i:=2; i<5; i++ { first[i][0] += -first[1][0] ; first[i][1] += -first[1][1] }
 		// if first[0][0] > 0 { first[0][0] += -1000 } else { first[0][0] += 1000 }
 		// angle := float64(first[0][0]) / 1000 * 180
 		// first[1][0], first[1][1] = first[1][0] - base.Round(float64(radius/2)*math.Sin(angle)), first[1][1] - base.Round(float64(radius/2)*math.Cos(angle))
@@ -61,13 +61,13 @@ func getAll(c *gin.Context) {
 		distance := math.Sqrt( math.Pow(float64(path[1][0] - first[1][0]), 2) + math.Pow(float64(path[1][1] - first[1][1]), 2) )
 		if (*each).Current.IsNPC() == false { 
 			if countOfPlayers < plimit && distance < float64(radius) && id != takenID { 
-				for i:=1; i<5; i++ { path[i][0] += -first[1][0] ; path[i][1] += -first[1][1] }
+				// for i:=1; i<5; i++ { path[i][0] += -first[1][0] ; path[i][1] += -first[1][1] }
 				buffer = append(buffer, (*each).Current.Simplify(path)) 
 				countOfPlayers++ 
 			}
 		} else { 
 			if distance < float64(radius) { 
-				for i:=1; i<5; i++ { path[i][0] += -first[1][0] ; path[i][1] += -first[1][1] }
+				// for i:=1; i<5; i++ { path[i][0] += -first[1][0] ; path[i][1] += -first[1][1] }
 				buffer = append(buffer, (*each).Current.Simplify(path)) 
 				countOfFoes++ 
 			}

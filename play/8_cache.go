@@ -12,9 +12,11 @@ const (
 	// 1 minute t-axis / 3: latest = 4 sec
 	tAxisStep = 400 //ms for grid
 	tRange = 80 //steps per bucket, must be >= Retro
-	tRetro = 3 //steps per retro
+	// tRetro = 3 //steps per retro
 	// db supports cleanup every min
 )
+
+var CollideAccelerator = 1600 / tAxisStep
 
 func TAxis() int { return (base.Epoch()/tAxisStep)%tRange }
 
@@ -150,9 +152,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 	toWrite := make(map[string][][3]int) // id: t, x, y
 	if even == 1 {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts >= 0 { (*st).Trace.Ist[ts] = latestStep 
-				// fmt.Println("Writing current traces:", even, ts, latestStep) 
-			} else { (*st).Trace.Snd[ts+tRange] = latestStep }//; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
+			// if ts >= 0 { (*st).Trace.Ist[ts] = latestStep 
+			// 	// fmt.Println("Writing current traces:", even, ts, latestStep) 
+			// } else { (*st).Trace.Snd[ts+tRange] = latestStep }//; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
 		// fmt.Println("Write traces ----------------------------")
@@ -161,9 +163,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 		(*st).Trace.Ist[now] = newstep //else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
 	} else if even == 2 {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts >= 0 { (*st).Trace.Snd[ts] = latestStep 
-				// fmt.Println("Writing current traces:", even, ts, latestStep) 
-			} else { (*st).Trace.Erd[ts+tRange] = latestStep }// ; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
+			// if ts >= 0 { (*st).Trace.Snd[ts] = latestStep 
+			// 	// fmt.Println("Writing current traces:", even, ts, latestStep) 
+			// } else { (*st).Trace.Erd[ts+tRange] = latestStep }// ; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
 		// fmt.Println("Write traces ----------------------------")
@@ -172,9 +174,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 		(*st).Trace.Snd[now] = newstep
 	} else {
 		for ts := latest ; ts < now ; ts++ { 
-			if ts >= 0 { (*st).Trace.Erd[ts] = latestStep 
-				// fmt.Println("Writing current traces:", even, ts, latestStep) 
-			} else { (*st).Trace.Ist[ts+tRange] = latestStep }// ; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
+			// if ts >= 0 { (*st).Trace.Erd[ts] = latestStep 
+			// 	// fmt.Println("Writing current traces:", even, ts, latestStep) 
+			// } else { (*st).Trace.Ist[ts+tRange] = latestStep }// ; fmt.Println("Writing old traces:", even, ts+tRange, latestStep)}
 			toWrite[id] = append(toWrite[id], [3]int{ts, latestStep[1], latestStep[2]})
 		}
 		// fmt.Println("Write traces ----------------------------")
