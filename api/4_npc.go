@@ -1,17 +1,6 @@
 package api
 
 import (
-	"errors"
-	"rhymald/mag-zeta/play"
-	// "rhymald/mag-zeta/base"
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel/attribute"
-	// "rhymald/mag-zeta/base"
-	// "go.opentelemetry.io/otel/trace"
-	// "fmt"
-	// "math"
-	// "rhymald/mag-zeta/connect"
-	"fmt"
 )
 
 // func npcRegen(hps *base.Life, ids *map[string]int, span *trace.Span) {

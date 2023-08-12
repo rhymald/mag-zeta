@@ -7,9 +7,11 @@ import(
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/jackc/pgx/v5"
 	"rhymald/mag-zeta/base"
-	// "rhymald/mag-zeta/play"
+	"rhymald/mag-zeta/play"
 	"fmt"
 )
+
+const AcceptableReadLatency = 200
 
 func ConnectCacheDB() []*pgx.Conn {
 	config, err := pgx.ParseConfig(os.Getenv("CACHEDB_WRITER_URL"))
@@ -94,26 +96,33 @@ func writeChunk(ctx context.Context, tx pgx.Tx, chunk map[string][][3]int) error
 	return nil
 }
 
-
-func ReadRound(writer *pgx.Conn, x, y, r, t int) error {
+func ReadRound(writer *pgx.Conn, x, y, r, t int) map[int][]string {
 	// Read the balance.
 	// var list string
 	// if err := tx.QueryRow(ctx,
 	// 		"SELECT id FROM uae WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(SQR($5-x)+SQR($6-y)) < $7", x+r, x-r, y+r, y-r, x, y, r).Scan(&list); err != nil {
 	// 		return err
 	// }
-	list, err := writer.Query(context.Background(), "SELECT id, t, date_part('epoch', inserted_at) FROM eua WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(POW(($5-x),2)+POW(($6-y),2)) < $7 AND t < $8+2 AND t > $8-2", x+r, x-r, y+r, y-r, x, y, r, t)
+	list, err := writer.Query(context.Background(), "SELECT id, t, date_part('epoch', inserted_at) FROM eua WHERE x < $1 AND x > $2 AND y < $3 AND y > $4 AND SQRT(POW(($5-x),2)+POW(($6-y),2)) < $7 AND t < $8+3 AND t > $8-3", x+r, x-r, y+r, y-r, x, y, r, t)
 	defer list.Close()
 	if err != nil {log.Fatal(err)}
-	log.Printf("Characters within %d from [%d,%d]:\n", r, x, y)
+	now := play.TAxis()
+	log.Printf("Characters within %d from [%d,%d] at %d:\n", r, x, y, now) // from play
 	start:=base.StartEpoch/1000000+base.Epoch()
+	buffer :=  make(map[int][]string)
 	for list.Next() {
 		var id string
 		var t int
 		var ts float64
 		if err := list.Scan(&id, &t, &ts); err != nil { log.Fatal(err) }
 		diff := int(1000*ts)-start
-		log.Printf(" => %3d: %s | %+d\n", t, id, diff)
+		if t == now {
+			log.Printf(" => %3d: %s | %+d\n", t, id, diff)
+		} else {
+			log.Printf("    %3d: %s | %+d\n", t, id, diff)
+		}
+		// found := map[string][2]int{ id: [2]int{ t, diff }}
+		if diff < AcceptableReadLatency && diff > -AcceptableReadLatency { buffer[t] = append(buffer[t], id) }
 	}
 
 	// // Perform the transfer.
@@ -126,7 +135,7 @@ func ReadRound(writer *pgx.Conn, x, y, r, t int) error {
 	// 		"UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, to); err != nil {
 	// 		return err
 	// }
-	return nil
+	return buffer
 }
 
 // func printBalances(conn *pgx.Conn) error {

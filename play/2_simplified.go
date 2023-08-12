@@ -12,6 +12,7 @@ type Simplified struct {
 	TS map[string]int `json:"TS"` 
 	// health
 	HP int `json:"HP"`
+	Size int `json:"Size"`
 	// Barrier int `json:"Barrier"`
 	// Wound int `json:"Wound"`
 	// elem
@@ -46,6 +47,7 @@ func (c *Character) Simplify(path [5][2]int) Simplified {
 	buffer.TS = make(map[string]int) // (*c).ID
 	buffer.TS["Born"] = (*c).TSBorn
 	buffer.TS["Atts"] = (*c).TSAtts
+	buffer.Size = base.CeilRound((*c).Body.Mean() * 1000)
 	body, elem := (*c).Body, (*c).Energy[0]
 	eb, ee := body.Elem(), elem.Elem()
 	if eb == base.ElemList[0] { eb = "" }

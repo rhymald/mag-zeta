@@ -16,7 +16,7 @@ const (
 	// db supports cleanup every min
 )
 
-var CollideAccelerator = 1600 / tAxisStep
+// var CollideAccelerator = 1600 / tAxisStep
 
 func TAxis() int { return (base.Epoch()/tAxisStep)%tRange }
 

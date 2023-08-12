@@ -2,6 +2,16 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"errors"
+	"rhymald/mag-zeta/play"
+	// "rhymald/mag-zeta/base"
+	"go.opentelemetry.io/otel/attribute"
+	// "rhymald/mag-zeta/base"
+	// "go.opentelemetry.io/otel/trace"
+	// "fmt"
+	// "math"
+	// "rhymald/mag-zeta/connect"
+	"fmt"
 )
 
 func showGrid(c *gin.Context) { 
