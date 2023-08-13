@@ -39,13 +39,14 @@ func getAll(c *gin.Context) {
 	var buffer []play.Simplified
 	_, spanPlayers := tracer.Start(ctx, "players")
 	countOfPlayers, countOfFoes := 0, 0
-	world.Lock() ; objLimit := len((*world).ByID)
 	takenID := "" // c.Request.Header["myplayerid"]
 	if _, ok := c.Request.Header["myplayerid"] ; ok { 
 		takenID = c.GetHeader("myplayerid") } else { takenID = c.Param("myplayerid") 
 	}
 	myPlayer := &play.State{} 
+	world.Lock()
 	if _, ok := (*world).ByID[takenID] ; ok { myPlayer = (*world).ByID[takenID] } else { myPlayer = nil }
+	objLimit := len((*world).ByID)
 	plimit, flimit := base.Round(math.Log2( float64(objLimit) )) + 4, 16 + base.Round(math.Sqrt( float64(objLimit) ))
 	radius := math.Sqrt(3)*4000 ; first := [5][2]int{} ; if myPlayer != nil { 
 		first = myPlayer.Path() 

@@ -29,14 +29,14 @@ func (loc *Location) GridWriter_ByPush(writeToCache chan map[string][][3]int) {
 				loc.Unlock()
 				epoch := base.Epoch()
 				even := (epoch/(80*400))%3			
-				(*char).Trace.Lock()
-				trace, later := (*char).Trace.Erd, (*char).Trace.Snd
+				(*char).Ist.Lock() ; (*char).Snd.Lock() ; (*char).Erd.Lock()
+				later, trace := (*char).Snd.Trxy, (*char).Erd.Trxy
 				if even == 1 { 
-					trace, later = (*char).Trace.Ist, (*char).Trace.Erd 
+					later, trace = (*char).Erd.Trxy, (*char).Ist.Trxy 
 				} else if even == 2 {
-					trace, later = (*char).Trace.Snd, (*char).Trace.Ist
-				}			
-				(*char).Trace.Unlock()
+					later, trace = (*char).Ist.Trxy, (*char).Snd.Trxy
+				}
+				(*char).Ist.Unlock() ; (*char).Snd.Unlock() ; (*char).Erd.Unlock()
 				current := trace[moment]
 				previous := [3]int{}
 				iterator := 1
