@@ -32,7 +32,9 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 		(*st).Current.Unlock()
 		effect.Add_Self_HPRegen(16)
 		st.Lock()
-		(*st).Effects[(*effect).Time] = effect
+		renew := (*st).Effects
+		renew[(*effect).Time] = effect
+		(*st).Effects = renew
 		span.AddEvent(fmt.Sprintf("Emmiting regeneration effect: { %+v }", *effect))
 		st.Unlock()
 		base.Wait(wait/5)
@@ -43,7 +45,9 @@ func Lifecycle_Regenerate(st *play.State, ctx context.Context) {
 		effect := base.NewEffect()
 		effect.Add_Self_HPRegen(64)
 		st.Lock()
-		(*st).Effects[(*effect).Time] = effect
+		renew := (*st).Effects
+		renew[(*effect).Time] = effect
+		(*st).Effects = renew
 		st.Unlock()
 		span.AddEvent(fmt.Sprintf("Emmiting regeneration effect: { %+v }", *effect))
 		base.Wait(4236)
@@ -118,11 +122,13 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 			} else {
 				tsNew := now - diff - diff / 7
 				st.Lock()
-				for { if _, ok := (*st).Effects[tsNew]; ok { tsNew = tsNew+1 } else {break} }
+				renew := (*st).Effects
+				for { if _, ok := renew[tsNew]; ok { tsNew = tsNew+1 } else {break} }
 				sentBack := base.NewEffect()
 				(*sentBack).Time = tsNew
 				(*sentBack).Effects = append((*sentBack).Effects, each)
-				(*st).Effects[tsNew] = sentBack
+				renew[tsNew] = sentBack
+				(*st).Effects = renew
 				st.Unlock()
 				span.AddEvent(fmt.Sprintf("Redirected back to queue: { %+v }", *sentBack))
 				// counterDelayed = append(counterDelayed, fmt.Sprintf("%+d", diff))
@@ -156,8 +162,10 @@ func Lifecycle_EffectConsumer(st *play.State, ctx context.Context) {
 		span.AddEvent(fmt.Sprintf("HP modificated: %+d", hpregens))
 		for ts, dot := range makedots {
 			tsNew := ts
-			for { if _, ok := (*(*st).Current).Pool[tsNew]; ok { tsNew = tsNew+1 } else { break } }
-			(*(*st).Current).Pool[tsNew] = &dot
+			renew := (*(*st).Current).Pool
+			for { if _, ok := renew[tsNew]; ok { tsNew = tsNew+1 } else { break } }
+			renew[tsNew] = &dot
+			(*(*st).Current).Pool = renew
 		}
 		span.AddEvent(fmt.Sprintf("Dots to append: { %v }", makedots))
 		(*st).Current.Unlock()

@@ -122,7 +122,14 @@ func ReadRound(writer *pgx.Conn, x, y, r, t int) map[int][]string {
 			log.Printf("    %3d: %s | %+d\n", t, id, diff)
 		}
 		// found := map[string][2]int{ id: [2]int{ t, diff }}
-		if diff < AcceptableReadLatency && diff > -AcceptableReadLatency { buffer[t] = append(buffer[t], id) }
+		if diff < AcceptableReadLatency && diff > -AcceptableReadLatency { 
+			renew := buffer
+			renewList := renew[t]
+			renewList = append(renewList, id)
+			renew[t] = renewList
+			buffer = renew
+			// buffer[t] = append(buffer[t], id) 
+		}
 	}
 
 	// // Perform the transfer.

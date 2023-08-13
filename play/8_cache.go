@@ -80,10 +80,14 @@ func (st *State) UpdLife() { // used after write
 	for _, element := range base.ElemList {
 		change := (*(*(*st).Current).Life).Barrier[element] - (*st).Later.Life.Barrier[element]
 		(*st).Writing.Life.Barrier[element] += change 
-		if (*st).Writing.Life.Barrier[element] == 0 { delete((*st).Writing.Life.Barrier, element) }
+		renew := (*st).Writing.Life.Barrier
+		if renew[element] == 0 { delete(renew, element) }
+		(*st).Writing.Life.Barrier = renew
 	}
 	// (*st).Writing.Life.Barrier = barriers
-	(*st).Later.Time["Life"] = base.Epoch()
+	renew := (*st).Later.Time
+	renew["Life"] = base.Epoch()
+	(*st).Later.Time = renew
 	(*st).Later.Life = *((*(*st).Current).Life)
 	st.Unlock()
 	(*st).Current.Unlock()
@@ -106,29 +110,35 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 	if traceLen == 0 { 
 		if even == 0 {
 			(*st).Erd.Lock()
-			(*st).Erd.Trxy[now] = [3]int{ 
+			renew := (*st).Erd.Trxy
+			renew[now] = [3]int{ 
 				base.ChancedRound( 2000*base.Rand()-1000 )/250*250, 
 				base.ChancedRound( 2000*base.Rand()-1000 ), 
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
+			(*st).Erd.Trxy = renew
 			(*st).Erd.Unlock()
 			return 
 		} else if even == 1 {
 			(*st).Ist.Lock()
-			(*st).Ist.Trxy[now] = [3]int{ 
+			renew := (*st).Ist.Trxy
+			renew[now] = [3]int{ 
 				base.ChancedRound( 2000*base.Rand()-1000 )/250*250,
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
+			(*st).Ist.Trxy = renew
 			(*st).Ist.Unlock()
 			return 
 		} else {
 			(*st).Snd.Lock()
-			(*st).Snd.Trxy[now] = [3]int{ 
+			renew := (*st).Snd.Trxy
+			renew[now] = [3]int{ 
 				base.ChancedRound( 2000*base.Rand()-1000 )/250*250,
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 				base.ChancedRound( 2000*base.Rand()-1000 ),
 			}
+			(*st).Snd.Trxy = renew
 			(*st).Snd.Unlock()
 			return 
 		}
@@ -170,7 +180,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 		// fmt.Println("WRITTEN trace:", even, now, newstep)
 		// fmt.Println("Write traces FINISHED ============================")
 		(*st).Ist.Lock()
-		(*st).Ist.Trxy[now] = newstep //else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+		renew := (*st).Ist.Trxy
+		renew[now] = newstep //else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+		(*st).Ist.Trxy = renew
 		(*st).Ist.Unlock()
 	} else if even == 2 {
 		for ts := latest ; ts < now ; ts++ { 
@@ -183,7 +195,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 		// fmt.Println("WRITTEN trace:", even, now, newstep)
 		// fmt.Println("Write traces FINISHED ============================")
 		(*st).Snd.Lock()
-		(*st).Snd.Trxy[now] = newstep
+		renew := (*st).Snd.Trxy
+		renew[now] = newstep //else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+		(*st).Snd.Trxy = renew
 		(*st).Snd.Unlock()
 	} else {
 		for ts := latest ; ts < now ; ts++ { 
@@ -196,7 +210,9 @@ func (st *State) Move(rotate float64, step bool, writeToCache chan map[string][]
 		// fmt.Println("WRITTEN trace:", even, now, newstep)
 		// fmt.Println("Write traces FINISHED ============================")
 		(*st).Erd.Lock()
-		(*st).Erd.Trxy[now] = newstep
+		renew := (*st).Erd.Trxy
+		renew[now] = newstep //else { (*st).Trace.Odd[now+(tRange*tAxisStep)/tAxisStep] = newstep }
+		(*st).Erd.Trxy = renew
 		(*st).Erd.Unlock()
 	}
 	// (*st).Trace.Unlock()

@@ -41,10 +41,10 @@ func (c *Character) GetID() string {
 	in_bytes := make([]byte, 8)
 	bid := (*c).TSBorn
 	aid := (*c).TSAtts
-  binary.LittleEndian.PutUint64(in_bytes, uint64(bid))
+	binary.LittleEndian.PutUint64(in_bytes, uint64(bid))
 	str := sha512.Sum512(in_bytes)
 	bornID := base58.Encode(str[:])
-  binary.LittleEndian.PutUint64(in_bytes, uint64(aid))
+	binary.LittleEndian.PutUint64(in_bytes, uint64(aid))
 	str = sha512.Sum512(in_bytes)
 	attsID := base58.Encode(str[:])
 	return fmt.Sprintf("%v-%v-%v-%v", bornID[:4], bornID[(len(bornID)-9):len(bornID)], attsID[:1], attsID[(len(attsID)-9):len(attsID)])
@@ -55,7 +55,7 @@ func (c *Character) GetID() string {
 func (c *Character) CalculateAttributes() error {
 	c.Lock()
 	// if c.GetID() < 1000000 { return errors.New("Character Attributes: Empty character ID.") }
-	if len((*c).Energy) == 0 { return errors.New("Character Attributes: Empty character streams.") }
+	if len((*c).Energy) == 0 { c.Unlock() ; return errors.New("Character Attributes: Empty character streams.") }
 	var buffer Attributes
 	buffer.Vitality = (*c).Body.Dot() * 10
 	buffer.Agility = (*c).Body.Mean() * 0.7

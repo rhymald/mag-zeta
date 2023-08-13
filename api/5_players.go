@@ -33,7 +33,9 @@ func newPlayer(c *gin.Context) {
 	if err == nil {
 		id := player.GetID()
 		world.Lock()
-		(*world).ByID[id] = state
+		renew := (*world).ByID
+		renew[id] = state
+		(*world).ByID = renew
 		world.Unlock()
 		c.IndentedJSON(200, struct{ ID string }{ ID: player.GetID() })
 	} else {

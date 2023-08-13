@@ -42,7 +42,9 @@ func newFoe(c *gin.Context) {
 	state := foe.NewState()
 	if err == nil {
 		world.Lock()
-		(*world).ByID[foe.GetID()] = state
+		renew := (*world).ByID
+		renew[foe.GetID()] = state
+		(*world).ByID = renew
 		world.Unlock()
 		c.IndentedJSON(200, struct{ ID string }{ ID: foe.GetID() })
 	} else {
