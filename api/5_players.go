@@ -29,16 +29,16 @@ func newPlayer(c *gin.Context) {
 	spanCalculate.End()
 	
 	_, spanResponse := tracer.Start(ctx, "responding")
-	world.Lock()
 	state := player.NewState()
 	if err == nil {
 		id := player.GetID()
+		world.Lock()
 		(*world).ByID[id] = state
+		world.Unlock()
 		c.IndentedJSON(200, struct{ ID string }{ ID: player.GetID() })
 	} else {
 		c.AbortWithError(500, errors.New("Invalid player character"))
 	}
-	world.Unlock()
 	spanResponse.End()
 	
 	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()

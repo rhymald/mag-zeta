@@ -39,15 +39,15 @@ func newFoe(c *gin.Context) {
 	spanCalculate.End()
 
 	_, spanResponse := tracer.Start(ctx, "responding")
-	world.Lock()
 	state := foe.NewState()
 	if err == nil {
+		world.Lock()
 		(*world).ByID[foe.GetID()] = state
+		world.Unlock()
 		c.IndentedJSON(200, struct{ ID string }{ ID: foe.GetID() })
 	} else {
 		c.AbortWithError(500, errors.New("Invalid foe character"))
 	}
-	world.Unlock()
 	spanResponse.End()
 
 	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
