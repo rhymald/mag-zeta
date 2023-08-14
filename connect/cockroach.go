@@ -14,7 +14,9 @@ import(
 const AcceptableReadLatency = 200
 
 func ConnectCacheDB() []*pgx.Conn {
-	config, err := pgx.ParseConfig(os.Getenv("CACHEDB_WRITER_URL"))
+	con_string :=  os.Getenv("CACHEDB_WRITER_URL")
+	if len(con_string) <= 5 { con_string = "postgresql://root@localhost:26257/grid?sslmode=disable" }
+	config, err := pgx.ParseConfig(con_string)
 	if err != nil { log.Fatal(err) }
 	config.RuntimeParams["application_name"] = "$ mag_cached_grid"
 	writer, err := pgx.ConnectConfig(context.Background(), config)

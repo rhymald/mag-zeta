@@ -36,7 +36,6 @@ func (loc *Location) GridWriter_ByPush(writeToCache chan map[string][][3]int) {
 				} else if even == 2 {
 					later, trace = (*char).Ist.Trxy, (*char).Snd.Trxy
 				}
-				(*char).Ist.Unlock() ; (*char).Snd.Unlock() ; (*char).Erd.Unlock()
 				current := trace[moment]
 				previous := [3]int{}
 				iterator := 1
@@ -51,6 +50,7 @@ func (loc *Location) GridWriter_ByPush(writeToCache chan map[string][][3]int) {
 						iterator++
 					}
 				}
+				(*char).Ist.Unlock() ; (*char).Snd.Unlock() ; (*char).Erd.Unlock()
 				fmt.Println(each, "at", moment, "was in", current, previous)
 			}
 			break

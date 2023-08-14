@@ -1,4 +1,16 @@
-# N7S: Movement and world grid
+# This projects is closed
+
+> MAG-eta started as 7th attempt!
+
+1. Alpha: Not published - primitives
+2. Beta: Not published - primitives, fighting mechanics
+3. Gamma: [here](https://github.com/rhymald/mag-gamma/tree/MBF-elemental-state-refactoring) - primitives and character
+4. Delta: [here](https://github.com/rhymald/mag-delta/tree/N33-player-refactoring) - fighting mechanics, block tree
+5. Epsilon: [here](https://github.com/rhymald/mag-epsilon/tree/N3G-character) - interactive CLI, trying transactional
+6. Zeta: current repo - successfully transactional, with movements across world grid
+7. Eta: [here](https://github.com/rhymald/mag-eta) - transactional, block tree
+
+## N7S: Movement and world grid
 
 Coordinates in spaces: 
 - DB cache - to filter and seek targets, with row autodeletion
@@ -8,15 +20,15 @@ Coordinates in spaces:
 - Simplified output
   - Direction, X, Y
 
-## Step:
+### Step:
 - Fetch last in trace
 - If moved recently - move larger and faster
 
-## Focus:
+### Focus:
 - Fetch last focus:
 - if recently - focus fa-faster and preciser
 
-# N5U: Effects
+## N5U: Effects
 
 Regeneration routine on each char:
 - Each stream emits dot => to an effect (players only)
@@ -48,7 +60,7 @@ Effects consumer on each char:
 
 --- 
 
-# Scripts
+## Scripts
 
 List all funcs and types:
 ```bash
@@ -62,7 +74,7 @@ sudo sh -c 'truncate -s 0 /var/lib/docker/containers/*/*-json.log'
 set -eu ; LANG=en_US.UTF-8 snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision; do ; snap remove "$snapname" --revision="$revision" ; done
 ```
 
-## Loadtest
+### Loadtest
 
 - __Global Change__
 - `Fail point`

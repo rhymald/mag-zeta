@@ -14,7 +14,8 @@ import (
 )
 
 func newPlayer(c *gin.Context) { 
-	ctx, span := tracer.Start((*c).Request.Context(), "login-player")
+	ginContext := (*c).Request.Context()
+	ctx, span := tracer.Start(ginContext, "login-player")
 	defer span.End()
 
 	_, spanGenerate := tracer.Start(ctx, "generating-basic-stats")
@@ -43,8 +44,8 @@ func newPlayer(c *gin.Context) {
 	}
 	spanResponse.End()
 	
-	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
-	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
+	go func(){ Lifecycle_Regenerate(state, ginContext) }()
+	go func(){ Lifecycle_EffectConsumer(state, ginContext) }()
 	go func(){ for {
 		state.Move(1.0/8, true, GridCache)
 		// state.Turn(0.09, GridCache)

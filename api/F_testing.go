@@ -24,7 +24,8 @@ func showState(c *gin.Context) {
 }
 
 func newFoe(c *gin.Context) { 
-	ctx, span := tracer.Start((*c).Request.Context(), "spawn-foe")
+	ginContext := (*c).Request.Context()
+	ctx, span := tracer.Start(ginContext, "spawn-foe")
 	defer span.End()
 
 	_, spanGenerate := tracer.Start(ctx, "generating-basic-stats")
@@ -52,8 +53,8 @@ func newFoe(c *gin.Context) {
 	}
 	spanResponse.End()
 
-	go func(){ Lifecycle_Regenerate(state, (*c).Request.Context()) }()
-	go func(){ Lifecycle_EffectConsumer(state, (*c).Request.Context()) }()
+	go func(){ Lifecycle_Regenerate(state, ginContext) }()
+	go func(){ Lifecycle_EffectConsumer(state, ginContext) }()
 	go func(){ for {
 		state.Move(0.11, false, GridCache)
 		// state.Turn(0.11, GridCache)
